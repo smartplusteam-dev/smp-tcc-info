@@ -602,6 +602,14 @@ a{color:var(--green);text-decoration:none}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .ebook-grid{grid-template-columns:repeat(2,1fr)}
   .modal-box{padding:22px 18px}
+  /* Chat page on mobile — shrink to visible area above bottom-nav */
+  #page-chat,#page-chat.active{
+    height:calc(100dvh - 64px - env(safe-area-inset-bottom,0px))!important;
+    max-height:calc(100dvh - 64px - env(safe-area-inset-bottom,0px))!important;
+  }
+  .chat-input-area{
+    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
 }
 @media(min-width:769px){
   #bottom-nav{display:none!important}
@@ -1766,6 +1774,8 @@ const API = {
   /* Data */
   list(tbl,p={}){const q=new URLSearchParams(p).toString();return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}?${q}`);},
   create(tbl,data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${tbl}`,data);},
+  update(tbl,id,data){return this.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`,data);},
+  get(tbl,id){return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`);},
   count(tbl){return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}/count`);}
 };
 
@@ -2328,10 +2338,15 @@ function renderMsgRow(m, prevM, myEmail){
     sep = `<div class="chat-date-sep">${dateSep(ts)}</div>`;
   }
 
-  // Reactions
-  const rxData = chatReactions[id] || {};
-  const myRx = rxData._mine || '';
-  const rxHtml = Object.entries(rxData).filter(([k])=>k!=='_mine').map(([emoji,cnt])=>`
+  // Reactions — load from DB field first, fallback to localStorage
+  loadChatReactions();
+  let dbRx = {};
+  const dbRxRaw = m.reactions||m.Reactions||'';
+  if(dbRxRaw){ try{ dbRx = JSON.parse(dbRxRaw); }catch{} }
+  const hasDbRx = Object.keys(dbRx).filter(k=>k!=='_users').length > 0;
+  const rxSource = hasDbRx ? dbRx : (chatReactions[id]||{});
+  const myRx = (dbRx._users && dbRx._users[myEmail]) || rxSource._mine || '';
+  const rxHtml = Object.entries(rxSource).filter(([k])=>k!=='_mine'&&k!=='_users').map(([emoji,cnt])=>`
     <span class="react-pill${myRx===emoji?' mine':''}" onclick="toggleReaction('${esc(id)}','${emoji}')">
       ${emoji}<span class="react-pill-cnt">${cnt}</span>
     </span>`).join('');
@@ -2345,9 +2360,12 @@ function renderMsgRow(m, prevM, myEmail){
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
   } else if(isImg){
-    bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}" onclick="openLightbox('${esc(imgUrl)}')" loading="lazy">`;
+    bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
+      onclick="openLightbox('${esc(imgUrl)}')"
+      onerror="reloadMsgImg(this,'${esc(id)}')"
+      loading="lazy">`;
   } else {
-    bubbleInner = quoteHtml + esc(text);
+    bubbleInner = quoteHtml + linkify(text);
   }
 
   // Actions for own: delete. Both: react + reply
@@ -2366,6 +2384,18 @@ function renderMsgRow(m, prevM, myEmail){
       </div>
     </div>
   </div>`;
+}
+
+/* ── Linkify: convert URLs to clickable links ── */
+function linkify(text){
+  // Escape HTML first, then convert escaped URL patterns to <a> tags
+  const escaped = esc(text);
+  return escaped.replace(/(https?:\/\/[^\s&lt;&gt;&quot;&#x27;]+)/g, match=>{
+    const rawUrl = match.replace(/&amp;/g,'&');
+    return `<a href="${rawUrl}" target="_blank" rel="noopener"
+      style="color:var(--cyan);text-decoration:underline;word-break:break-all"
+      onclick="event.stopPropagation()">${match}</a>`;
+  });
 }
 
 /* ── Color hash ── */
@@ -2493,18 +2523,16 @@ async function sendMsg(){
 async function sendImage(event){
   const file = event.target.files[0];
   if(!file) return;
-  if(file.size > 10*1024*1024) return toast('ไฟล์ใหญ่เกิน 10MB','warn');
+  if(file.size > 5*1024*1024) return toast('ไฟล์ใหญ่เกิน 5MB (chat ใช้ base64)','warn');
   if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
 
-  toast('กำลังอัปโหลดรูป...','info');
+  toast('กำลังประมวลผลรูป...','info');
   try{
-    const uploaded = await API.uploadFile(file);
-    const url = uploaded?.url||uploaded?.signedUrl||'';
-    if(!url) throw new Error('ไม่ได้รับ URL จาก server');
-
+    // บีบอัดรูปก่อน encode base64 เพื่อประหยัดพื้นที่
+    const compressed = await compressImg(file, 900, 0.78);
     const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
     await API.create(CFG.tbl.chat,{
-      message:`⟦img⟧${url}`,
+      message:`⟦img⟧${compressed}`,
       user_email:AUTH.user?.email||'anonymous',
       user_name:myName,
       created_at:new Date().toISOString()
@@ -2514,6 +2542,25 @@ async function sendImage(event){
     toast('ส่งรูปสำเร็จ','success');
   }catch(e){ toast('อัปโหลดไม่สำเร็จ: '+e.message,'error'); }
   event.target.value='';
+}
+
+/* ── Compress image to base64 ── */
+function compressImg(file, maxPx, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      let w=img.width, h=img.height;
+      if(w>maxPx||h>maxPx){ const r=Math.min(maxPx/w,maxPx/h); w=Math.round(w*r); h=Math.round(h*r); }
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=>reject(new Error('อ่านรูปไม่ได้'));
+    img.src = url;
+  });
 }
 
 /* ── Message actions (right-click / long press) ── */
@@ -2562,22 +2609,59 @@ function cancelReply(){
   qs('reply-preview').style.display='none';
 }
 
-/* ── Reactions ── */
-function toggleReaction(id, emoji){
-  loadChatReactions();
-  if(!chatReactions[id]) chatReactions[id]={};
-  const rx = chatReactions[id];
-  if(rx._mine===emoji){
-    rx[emoji] = Math.max(0,(rx[emoji]||1)-1);
-    if(!rx[emoji]) delete rx[emoji];
-    delete rx._mine;
-  } else {
-    if(rx._mine){ const prev=rx._mine; rx[prev]=Math.max(0,(rx[prev]||1)-1); if(!rx[prev]) delete rx[prev]; }
-    rx._mine = emoji;
-    rx[emoji] = (rx[emoji]||0)+1;
+/* ── Reactions — sync to NocoDB ── */
+async function toggleReaction(id, emoji){
+  const myEmail = AUTH.user?.email||'';
+  if(!myEmail || !CFG.tbl.chat) return;
+
+  try{
+    // ดึง reactions ปัจจุบันจาก DB
+    const row = await API.get(CFG.tbl.chat, id);
+    let dbRx = {};
+    try{ dbRx = JSON.parse(row.reactions||row.Reactions||'{}'); }catch{}
+    if(!dbRx._users) dbRx._users = {};
+
+    const prevEmoji = dbRx._users[myEmail];
+    if(prevEmoji === emoji){
+      // Toggle off
+      delete dbRx._users[myEmail];
+      dbRx[emoji] = Math.max(0,(dbRx[emoji]||1)-1);
+      if(!dbRx[emoji]) delete dbRx[emoji];
+    } else {
+      // Remove previous
+      if(prevEmoji){
+        dbRx[prevEmoji] = Math.max(0,(dbRx[prevEmoji]||1)-1);
+        if(!dbRx[prevEmoji]) delete dbRx[prevEmoji];
+      }
+      dbRx._users[myEmail] = emoji;
+      dbRx[emoji] = (dbRx[emoji]||0)+1;
+    }
+
+    await API.update(CFG.tbl.chat, id, {reactions: JSON.stringify(dbRx)});
+
+    // อัปเดต localStorage ด้วยเพื่อ fallback
+    loadChatReactions();
+    chatReactions[id] = {};
+    Object.entries(dbRx).filter(([k])=>k!=='_users').forEach(([k,v])=>{ chatReactions[id][k]=v; });
+    chatReactions[id]._mine = dbRx._users[myEmail]||'';
+    if(!chatReactions[id]._mine) delete chatReactions[id]._mine;
+    saveChatReactions();
+
+  }catch(e){
+    // Fallback: localStorage only
+    console.warn('reaction NocoDB sync failed, using localStorage:', e);
+    loadChatReactions();
+    if(!chatReactions[id]) chatReactions[id]={};
+    const rx = chatReactions[id];
+    if(rx._mine===emoji){
+      rx[emoji]=Math.max(0,(rx[emoji]||1)-1); if(!rx[emoji]) delete rx[emoji]; delete rx._mine;
+    } else {
+      if(rx._mine){ const p=rx._mine; rx[p]=Math.max(0,(rx[p]||1)-1); if(!rx[p]) delete rx[p]; }
+      rx._mine=emoji; rx[emoji]=(rx[emoji]||0)+1;
+    }
+    if(!rx._mine && Object.keys(rx).filter(k=>k!=='_mine').length===0) delete chatReactions[id];
+    saveChatReactions();
   }
-  if(!rx._mine && Object.keys(rx).length===0) delete chatReactions[id];
-  saveChatReactions();
   loadChat();
 }
 
@@ -2625,9 +2709,33 @@ function autoResizeTa(el){
 function openLightbox(src){
   const box = document.createElement('div');
   box.className='img-lightbox';
-  box.innerHTML=`<img src="${esc(src)}" alt="ภาพ">`;
-  box.onclick = ()=>box.remove();
+  box.style.flexDirection='column';
+  box.style.gap='14px';
+  const safeUrl = esc(src);
+  box.innerHTML=`
+    <img src="${safeUrl}" alt="ภาพ" style="max-width:95vw;max-height:78vh;border-radius:10px;object-fit:contain;display:block;box-shadow:0 20px 60px rgba(0,0,0,.7)">
+    <div style="display:flex;gap:10px;justify-content:center">
+      <a href="${safeUrl}" download target="_blank" rel="noopener"
+         style="background:var(--green);color:#030E07;padding:9px 22px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px"
+         onclick="event.stopPropagation()">⬇ ดาวน์โหลด</a>
+      <button onclick="this.closest('.img-lightbox').remove()"
+         style="background:var(--card);border:1px solid var(--border);color:var(--text-s);padding:9px 22px;border-radius:10px;font-size:13px;cursor:pointer">✕ ปิด</button>
+    </div>`;
+  box.onclick=(e)=>{ if(e.target===box) box.remove(); };
   document.body.appendChild(box);
+}
+
+/* ── Reload expired NocoDB signed URL ── */
+async function reloadMsgImg(imgEl, msgId){
+  imgEl.onerror = null; // prevent infinite loop
+  try{
+    const row = await API.get(CFG.tbl.chat, msgId);
+    const raw = row.message||row.Message||'';
+    if(raw.startsWith('⟦img⟧')){
+      const newUrl = raw.slice(5);
+      if(newUrl && newUrl !== imgEl.src){ imgEl.src = newUrl; }
+    }
+  }catch(e){ console.warn('reloadMsgImg:', e); imgEl.style.opacity='.3'; }
 }
 
 /* ── Badge check (background polling) ── */
