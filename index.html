@@ -1101,10 +1101,7 @@ a{color:var(--green);text-decoration:none}
         <iframe id="tcc-iframe"
           src=""
           style="width:100%;height:100%;border:none;display:block"
-          allow="camera; microphone; fullscreen"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
-          onload="onTccLoad()"
-          onerror="onTccError()">
+          allow="camera; microphone; fullscreen">
         </iframe>
       </div>
     </div>
@@ -2326,42 +2323,42 @@ let tccLoaded = false;
 function loadTCC(){
   if(tccLoaded) return;
   tccLoaded = true;
-  const iframe = qs('tcc-iframe');
+
+  const iframe  = qs('tcc-iframe');
   const loading = qs('tcc-loading');
   const blocked = qs('tcc-blocked');
+
   loading.style.display = 'flex';
   blocked.style.display  = 'none';
-  iframe.src = 'https://customer-information.tradercafeclub.workers.dev/#information';
 
-  // Timeout fallback — ถ้าโหลดไม่เสร็จใน 12 วินาที ให้แสดงปุ่มเปิดแท็บใหม่
-  window._tccTimer = setTimeout(()=>{
+  // ผูก event listener ใน JS (ไม่ใช้ inline attribute)
+  iframe.addEventListener('load', function(){
+    clearTimeout(window._tccTimer);
+    // ถ้า src ยังเป็น '' หรือ about:blank ยังไม่ต้องซ่อน
+    if(!iframe.src || iframe.src === 'about:blank' || iframe.src === location.href) return;
+    loading.style.display = 'none';
+  });
+
+  iframe.addEventListener('error', function(){
+    clearTimeout(window._tccTimer);
+    loading.style.display = 'none';
+    blocked.style.display  = 'flex';
+  });
+
+  // Timeout fallback 12 วิ
+  window._tccTimer = setTimeout(function(){
     if(loading.style.display !== 'none'){
       loading.style.display = 'none';
       blocked.style.display  = 'flex';
     }
   }, 12000);
+
+  // โหลด URL หลังผูก event แล้ว
+  iframe.src = 'https://customer-information.tradercafeclub.workers.dev/#information';
 }
 
-function onTccLoad(){
-  clearTimeout(window._tccTimer);
-  const loading = qs('tcc-loading');
-  const blocked = qs('tcc-blocked');
-  // ตรวจสอบว่า iframe โหลดจริงหรือโดน block
-  try{
-    const doc = qs('tcc-iframe').contentDocument;
-    if(!doc || !doc.body || doc.body.innerHTML === ''){
-      loading.style.display = 'none';
-      blocked.style.display  = 'flex';
-      return;
-    }
-  }catch(e){
-    // Cross-origin block — iframe ยังโหลดอยู่ แต่เข้าถึง DOM ไม่ได้ = ปกติ (OK)
-  }
-  loading.style.display = 'none';
-}
-
+function onTccLoad(){} // stub ไว้ป้องกัน error จาก reference เก่า
 function onTccError(){
-  clearTimeout(window._tccTimer);
   qs('tcc-loading').style.display = 'none';
   qs('tcc-blocked').style.display  = 'flex';
 }
