@@ -262,112 +262,27 @@ a{color:var(--green);text-decoration:none}
 .pay-hist-item:last-child{border-bottom:none}
 
 /* ================================================
-   CHAT v2 — LINE Style
+   CHAT
 ================================================ */
-#page-chat{padding:0!important;height:100%}
-#page-chat.active{display:flex!important;flex-direction:column}
-
-/* ── Header ── */
-.chat-hdr{display:flex;align-items:center;gap:11px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.chat-hdr-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--green-d),var(--green));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#030E07;flex-shrink:0}
-.chat-hdr-name{font-weight:700;font-size:15px;color:var(--text)}
-.chat-hdr-sub{font-size:11px;color:var(--text-s);margin-top:1px}
-.chat-hbtn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text-s);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;margin-left:2px}
-.chat-hbtn:hover{background:rgba(255,255,255,.07);color:var(--text)}
-.chat-hbtn svg{width:17px;height:17px}
-
-/* ── Messages wrap ── */
-.chat-msgs-wrap{flex:1;overflow-y:auto;padding:10px 12px 6px;display:flex;flex-direction:column;gap:1px;scroll-behavior:smooth;position:relative}
-
-/* ── Date separator ── */
-.chat-date-sep{text-align:center;margin:12px 0 8px;font-size:11px;color:var(--text-s);display:flex;align-items:center;gap:8px}
-.chat-date-sep::before,.chat-date-sep::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* ── Message rows ── */
-.msg-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:1px;position:relative}
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 200px)}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 0}
+.msg-row{display:flex;gap:10px;align-items:flex-end}
 .msg-row.own{flex-direction:row-reverse}
-.msg-row.grouped .msg-av{visibility:hidden}
-.msg-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue-d),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;align-self:flex-end;cursor:default}
-.msg-body{max-width:76%;display:flex;flex-direction:column}
-.msg-row.own .msg-body{align-items:flex-end}
-.msg-name{font-size:10px;color:var(--text-s);margin-bottom:3px;padding-left:2px}
-.msg-row.own .msg-name,.msg-row.grouped .msg-name{display:none}
-
-/* ── Bubble ── */
-.msg-bubble{padding:9px 13px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word;position:relative;cursor:pointer;transition:filter .12s;user-select:text}
-.msg-bubble:active{filter:brightness(.88)}
-.msg-row:not(.own) .msg-bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:5px;color:var(--text)}
-.msg-row.own .msg-bubble{background:linear-gradient(135deg,#1a4a7a,#0f3060);border:1px solid #1e5285;border-bottom-right-radius:5px;color:#fff}
-.msg-deleted .msg-bubble{background:var(--surface)!important;border-style:dashed!important}
-.msg-deleted-text{font-style:italic;color:var(--text-d);font-size:13px}
-
-/* ── Reply quote inside bubble ── */
-.msg-quote{background:rgba(0,0,0,.22);border-left:3px solid var(--green);border-radius:6px;padding:5px 8px;margin-bottom:7px;font-size:12px}
-.msg-quote-name{color:var(--green);font-weight:600;margin-bottom:2px}
-.msg-quote-text{color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
-
-/* ── Image message ── */
-.msg-img{max-width:210px;border-radius:12px;cursor:pointer;display:block;border:1px solid var(--border);transition:filter .15s}
-.msg-img:hover{filter:brightness(.85)}
-
-/* ── Meta (time + read) ── */
-.msg-meta{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-d);margin-top:3px;padding:0 2px}
-.msg-row.own .msg-meta{justify-content:flex-end}
-.msg-tick{color:var(--green);font-size:11px}
-
-/* ── Reactions ── */
-.msg-reactions{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
-.react-pill{display:inline-flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:12px;cursor:pointer;transition:all .15s;user-select:none}
-.react-pill:hover{border-color:var(--green)}
-.react-pill.mine{border-color:var(--blue-l);background:rgba(59,130,246,.12)}
-.react-pill-cnt{font-size:11px;color:var(--text-s)}
-
-/* ── Reaction bar popup ── */
-.reaction-bar{position:absolute;bottom:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:30px;padding:6px 10px;display:flex;gap:4px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.6);animation:popIn .15s ease;white-space:nowrap}
-.msg-row.own .reaction-bar{right:0}
-.msg-row:not(.own) .reaction-bar{left:44px}
-@keyframes popIn{from{opacity:0;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
-.rbar-btn{font-size:24px;cursor:pointer;padding:2px 4px;border:none;background:none;border-radius:8px;transition:transform .15s}
-.rbar-btn:hover{transform:scale(1.35)}
-
-/* ── Typing indicator ── */
-.typing-row{display:flex;gap:8px;align-items:flex-end;padding:4px 0}
-.typing-dots{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:18px;border-bottom-left-radius:5px}
-.typing-dots span{width:7px;height:7px;border-radius:50%;background:var(--text-d);display:block;animation:typingBounce 1.3s infinite}
-.typing-dots span:nth-child(2){animation-delay:.22s}
-.typing-dots span:nth-child(3){animation-delay:.44s}
-@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
-
-/* ── New message badge ── */
-.new-msg-pill{position:sticky;bottom:8px;align-self:center;background:var(--green);color:#030E07;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;z-index:20;animation:popIn .2s ease;box-shadow:0 4px 14px rgba(34,197,94,.45);white-space:nowrap;margin:6px auto 0;display:none}
-
-/* ── Reply preview bar ── */
-.reply-preview{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;animation:slideUp .15s ease}
-.reply-preview-bar{width:3px;height:36px;background:var(--green);border-radius:2px;flex-shrink:0}
-.reply-preview-content{flex:1;min-width:0}
-.reply-preview-name{font-size:12px;color:var(--green);font-weight:600}
-.reply-preview-text{font-size:12px;color:var(--text-s);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.reply-cancel{background:none;border:none;color:var(--text-d);cursor:pointer;font-size:20px;padding:4px;line-height:1}
-.reply-cancel:hover{color:var(--text)}
-
-/* ── Emoji picker ── */
-.emoji-picker{background:var(--card);border-top:1px solid var(--border);padding:10px 12px;display:grid;grid-template-columns:repeat(9,1fr);gap:1px;flex-shrink:0;max-height:196px;overflow-y:auto;animation:slideUp .15s ease}
-.emoji-btn{font-size:22px;padding:5px;border-radius:8px;cursor:pointer;border:none;background:none;transition:background .1s;line-height:1}
-.emoji-btn:hover{background:rgba(255,255,255,.09)}
-
-/* ── Input area ── */
-.chat-input-area{display:flex;align-items:flex-end;gap:7px;padding:9px 11px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(9px,env(safe-area-inset-bottom))}
-.chat-tool-btn{width:38px;height:38px;border-radius:50%;border:none;background:transparent;color:var(--text-s);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .15s}
-.chat-tool-btn:hover{background:rgba(255,255,255,.07);color:var(--text)}
-.chat-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:9px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;resize:none;max-height:96px;overflow-y:auto;line-height:1.45;font-family:var(--font)}
+.msg-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue-d),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.msg-body{max-width:72%}
+.msg-name{font-size:10px;color:var(--text-s);margin-bottom:3px}
+.msg-row.own .msg-name{text-align:right}
+.msg-bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;word-break:break-word}
+.msg-row:not(.own) .msg-bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-row.own .msg-bubble{background:linear-gradient(135deg,#1e3a6e,#152b55);border:1px solid #2a4a82;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:var(--text-d);margin-top:4px}
+.msg-row.own .msg-time{text-align:right}
+.chat-input-area{display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:12px 18px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
 .chat-input:focus{border-color:var(--green)}
-.chat-send{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-d));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#030E07;transition:all .15s;flex-shrink:0}
-.chat-send:hover{filter:brightness(1.1);transform:scale(1.06)}
-.chat-send svg{width:17px;height:17px}
-
-/* ── Lightbox ── */
-.img-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:6000;display:flex;align-items:center;justify-content:center;cursor:pointer;animation:fadeIn .2s ease}
-.img-lightbox img{max-width:95vw;max-height:90vh;border-radius:10px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.chat-send{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-d));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#030E07;transition:all .15s;flex-shrink:0}
+.chat-send:hover{filter:brightness(1.1);transform:scale(1.05)}
+.chat-send svg{width:18px;height:18px}
 
 /* ================================================
    SUBMISSION FORM (กรอกครั้งเดียว/ล็อคหลังส่ง/อัปโหลดไฟล์)
@@ -602,16 +517,6 @@ a{color:var(--green);text-decoration:none}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .ebook-grid{grid-template-columns:repeat(2,1fr)}
   .modal-box{padding:22px 18px}
-  /* Reserve space for bottom-nav at #main-app level — content-area (flex:1) auto-shrinks */
-  #main-app.visible{
-    padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));
-    box-sizing:border-box;
-  }
-  /* page-chat fills what's left — no viewport math needed */
-  #page-chat,#page-chat.active{
-    height:100%!important;
-    max-height:100%!important;
-  }
 }
 @media(min-width:769px){
   #bottom-nav{display:none!important}
@@ -981,62 +886,22 @@ a{color:var(--green);text-decoration:none}
     </div>
 
     <!-- ──── CHAT ──── -->
-    <div class="page" id="page-chat" style="padding:0;flex-direction:column">
-
-      <!-- Header -->
-      <div class="chat-hdr">
-        <div class="chat-hdr-av">S</div>
-        <div style="flex:1">
-          <div class="chat-hdr-name">SmartPlus Group</div>
-          <div class="chat-hdr-sub" id="chat-status">ห้องสนทนากลุ่ม</div>
+    <div class="page" id="page-chat">
+      <div class="page-header">
+        <div class="page-title">แชท</div>
+        <div class="page-sub">ห้องสนทนากลุ่ม SmartPlus</div>
+      </div>
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-msgs">
+          <div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
         </div>
-        <button class="chat-hbtn" onclick="loadChat(true)" title="รีเฟรช"><i data-lucide="refresh-cw"></i></button>
-        <button class="chat-hbtn" onclick="scrollBottom()" title="ลงล่าง"><i data-lucide="chevrons-down"></i></button>
-      </div>
-
-      <!-- Messages -->
-      <div class="chat-msgs-wrap" id="chat-msgs">
-        <div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
-      </div>
-
-      <!-- New message pill -->
-      <div class="new-msg-pill" id="new-msg-pill" onclick="scrollBottom();this.style.display='none'">
-        ⬇ ข้อความใหม่
-      </div>
-
-      <!-- Typing indicator -->
-      <div id="typing-wrap" style="padding:0 12px 4px;flex-shrink:0;min-height:0">
-        <div class="typing-row" id="typing-ind" style="display:none">
-          <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);flex-shrink:0"></div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-in" class="chat-input" placeholder="พิมพ์ข้อความ..."
+            onkeyup="if(event.key==='Enter'&&!event.shiftKey)sendMsg()">
+          <button class="chat-send" onclick="sendMsg()">
+            <i data-lucide="send"></i>
+          </button>
         </div>
-      </div>
-
-      <!-- Reply preview -->
-      <div id="reply-preview" class="reply-preview" style="display:none">
-        <div class="reply-preview-bar"></div>
-        <div class="reply-preview-content">
-          <div class="reply-preview-name" id="rp-name"></div>
-          <div class="reply-preview-text" id="rp-text"></div>
-        </div>
-        <button class="reply-cancel" onclick="cancelReply()">✕</button>
-      </div>
-
-      <!-- Emoji picker -->
-      <div id="emoji-picker" class="emoji-picker" style="display:none"></div>
-
-      <!-- Input area -->
-      <div class="chat-input-area">
-        <button class="chat-tool-btn" id="emoji-toggle-btn" onclick="toggleEmoji()" title="อีโมจิ">😊</button>
-        <button class="chat-tool-btn" onclick="qs('chat-img-input').click()" title="ส่งรูป">📎</button>
-        <input type="file" id="chat-img-input" accept="image/*" style="display:none" onchange="sendImage(event)">
-        <textarea id="chat-in" class="chat-input" placeholder="พิมพ์ข้อความ..." rows="1"
-          oninput="autoResizeTa(this);onChatTyping()"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
-        ></textarea>
-        <button class="chat-send" id="chat-send-btn" onclick="sendMsg()">
-          <i data-lucide="send"></i>
-        </button>
       </div>
     </div>
 
@@ -1776,8 +1641,6 @@ const API = {
   /* Data */
   list(tbl,p={}){const q=new URLSearchParams(p).toString();return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}?${q}`);},
   create(tbl,data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${tbl}`,data);},
-  update(tbl,id,data){return this.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`,data);},
-  get(tbl,id){return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`);},
   count(tbl){return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}/count`);}
 };
 
@@ -2250,558 +2113,90 @@ async function loadPayHist(){
 }
 
 /* ================================================
-   CHAT POLLING — 3s
+   CHAT — NocoDB Polling (every 5s)
 ================================================ */
-let pollTimer = null;
-let _pollInterval = 6000;   // เริ่มที่ 6s ป้องกัน rate-limit
-let _imgReloadDone = new Set(); // ติดตาม msgId ที่พยายาม reload แล้ว (ป้องกัน loop)
+let pollTimer=null, lastMsgCnt=0;
 
 function startPolling(){
   if(!CFG.tbl.chat) return;
-  stopPolling();
-  pollTimer = setInterval(()=>{
+  pollTimer=setInterval(()=>{
     if(curPage==='chat') loadChat();
     else checkChatBadge();
-  }, _pollInterval);
+  }, 5000);
 }
 function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
 
-/* ── 429 backoff: ถ้า rate-limit ให้ชะลอ polling ── */
-function on429(){
-  stopPolling();
-  _pollInterval = Math.min(_pollInterval * 2, 30000); // สูงสุด 30s
-  setTimeout(startPolling, _pollInterval);
-  console.warn(`Rate limit hit — next poll in ${_pollInterval/1000}s`);
-}
-
-/* ================================================
-   CHAT v2 — LINE-like
-================================================ */
-let lastMsgCnt = 0;
-let chatPollTimer = null;
-let replyCtx = null;        // {name, text}
-let chatReactions = {};     // {msgId: {emoji: count, _mine: emoji}}  localStorage
-let emojiOpen = false;
-let typingTimer = null;
-let lastSeenId = null;
-
-const EMOJIS = ['😀','😂','🥰','😎','🤔','😭','😡','🥺','😍','🎉','👍','👎','❤️','🔥','✅','💯','🙏','👏','😱','🤣','💪','🤝','😊','😅','🫡','💬','📈','💰','🚀','⭐','🏆','💎','🙌','😤','🤩','🫶'];
-
-const REACT_EMOJIS = ['👍','❤️','😂','😮','😢','🔥'];
-
-function loadChatReactions(){
-  try{ chatReactions = JSON.parse(localStorage.getItem('sp_reactions')||'{}'); }catch{ chatReactions={}; }
-}
-function saveChatReactions(){ localStorage.setItem('sp_reactions', JSON.stringify(chatReactions)); }
-
-/* ── Parse special markers in message ── */
-function parseMsg(raw){
-  raw = raw || '';
-  let quote = null;
-  let isDeleted = false;
-  let isImg = false;
-  let imgUrl = '';
-  let text = raw;
-
-  if(raw.startsWith('⟦del⟧')){ isDeleted=true; text=''; }
-  else if(raw.startsWith('⟦img⟧')){ isImg=true; imgUrl=raw.slice(5); text=''; }
-  else if(raw.startsWith('⟦reply:')){
-    const end = raw.indexOf('⟧');
-    if(end>-1){
-      const meta = raw.slice(7,end);
-      const sep = meta.indexOf('|');
-      quote = { name: meta.slice(0,sep), text: meta.slice(sep+1) };
-      text = raw.slice(end+1);
-    }
-  }
-  return { text, quote, isDeleted, isImg, imgUrl };
-}
-
-/* ── Date label ── */
-function dateSep(iso){
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = Math.floor((now - d)/(1000*60*60*24));
-  if(diff===0) return 'วันนี้';
-  if(diff===1) return 'เมื่อวาน';
-  return d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
-}
-
-/* ── Render one message ── */
-function renderMsgRow(m, prevM, myEmail){
-  const own = (m.user_email||m.UserEmail||'') === myEmail;
-  const name = esc(m.user_name||m.UserName||m.user_email||'?');
-  const raw  = m.message||m.Message||'';
-  const id   = m.Id||m.id||'';
-  const ts   = m.CreatedAt||m.created_at||'';
-  const t    = fmtTime(ts);
-
-  // grouping
-  const prevOwn  = prevM && (prevM.user_email||prevM.UserEmail||'') === myEmail;
-  const prevName = prevM && (prevM.user_name||prevM.UserName||prevM.user_email||'');
-  const curName  = m.user_name||m.UserName||m.user_email||'';
-  const grouped  = prevM && prevName===curName && prevOwn===own;
-
-  const { text, quote, isDeleted, isImg, imgUrl } = parseMsg(raw);
-
-  // Date separator
-  const prevTs = prevM && (prevM.CreatedAt||prevM.created_at||'');
-  let sep = '';
-  if(!prevM || dateSep(ts) !== dateSep(prevTs)){
-    sep = `<div class="chat-date-sep">${dateSep(ts)}</div>`;
-  }
-
-  // Reactions — load from DB field first, fallback to localStorage
-  loadChatReactions();
-  let dbRx = {};
-  const dbRxRaw = m.reactions||m.Reactions||'';
-  if(dbRxRaw){ try{ dbRx = JSON.parse(dbRxRaw); }catch{} }
-  const hasDbRx = Object.keys(dbRx).filter(k=>k!=='_users').length > 0;
-  const rxSource = hasDbRx ? dbRx : (chatReactions[id]||{});
-  const myRx = (dbRx._users && dbRx._users[myEmail]) || rxSource._mine || '';
-  const rxHtml = Object.entries(rxSource).filter(([k])=>k!=='_mine'&&k!=='_users').map(([emoji,cnt])=>`
-    <span class="react-pill${myRx===emoji?' mine':''}" onclick="toggleReaction('${esc(id)}','${emoji}')">
-      ${emoji}<span class="react-pill-cnt">${cnt}</span>
-    </span>`).join('');
-
-  // Quote
-  let quoteHtml = '';
-  if(quote) quoteHtml = `<div class="msg-quote"><div class="msg-quote-name">${esc(quote.name)}</div><div class="msg-quote-text">${esc(quote.text)}</div></div>`;
-
-  // Bubble content
-  let bubbleInner = '';
-  if(isDeleted){
-    bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
-  } else if(isImg){
-    // ถ้า ID นี้เคย reload ล้มเหลวแล้ว → แสดง placeholder ตรงๆ ไม่ทำ HTTP call อีก
-    if(_imgReloadDone.has(String(id))){
-      bubbleInner = `<div style="width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)">🖼 โหลดไม่ได้</div>`;
-    } else {
-      bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
-        onclick="openLightbox('${esc(imgUrl)}')"
-        onerror="reloadMsgImg(this,'${esc(id)}')"
-        loading="lazy">`;
-    }
-  } else {
-    bubbleInner = quoteHtml + linkify(text);
-  }
-
-  // Actions for own: delete. Both: react + reply
-  const longpressAttr = `oncontextmenu="event.preventDefault();showMsgActions('${esc(id)}','${esc(own?'own':'other')}','${esc(curName)}','${esc(raw.replace(/'/g,"\\'"))}',this);return false;"`;
-
-  return `${sep}
-  <div class="msg-row${own?' own':''}${grouped?' grouped':''}" id="msg-${esc(id)}" data-id="${esc(id)}">
-    <div class="msg-av" style="background:hsl(${strHue(curName)},55%,38%)">${(curName[0]||'?').toUpperCase()}</div>
-    <div class="msg-body">
-      ${!grouped ? `<div class="msg-name">${name}</div>` : ''}
-      <div class="msg-bubble${isDeleted?' msg-deleted':''}" ${longpressAttr}>${bubbleInner}</div>
-      ${rxHtml ? `<div class="msg-reactions">${rxHtml}</div>` : ''}
-      <div class="msg-meta">
-        <span>${t}</span>
-        ${own && !isDeleted ? `<span class="msg-tick">✓✓</span>` : ''}
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ── Linkify: convert URLs to clickable links ── */
-function linkify(text){
-  // Escape HTML first, then convert escaped URL patterns to <a> tags
-  const escaped = esc(text);
-  return escaped.replace(/(https?:\/\/[^\s&lt;&gt;&quot;&#x27;]+)/g, match=>{
-    const rawUrl = match.replace(/&amp;/g,'&');
-    return `<a href="${rawUrl}" target="_blank" rel="noopener"
-      style="color:var(--cyan);text-decoration:underline;word-break:break-all"
-      onclick="event.stopPropagation()">${match}</a>`;
-  });
-}
-
-/* ── Color hash ── */
-function strHue(s){ let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))%360; return h; }
-
-/* ── Load / refresh chat ── */
-async function loadChat(force=false){
-  const el = qs('chat-msgs');
+async function loadChat(){
+  const el=qs('chat-msgs');
   if(!CFG.tbl.chat){
     el.innerHTML=`<div class="empty"><span class="ei">💬</span><h3>ยังไม่ได้ตั้งค่า</h3><p>กรุณาตั้งค่า Table ID ของ Chat</p><button class="btn btn-outline btn-sm mt-3" onclick="openConfig()">ตั้งค่า</button></div>`;
     return;
   }
   try{
-    loadChatReactions();
-    const d = await API.list(CFG.tbl.chat,{limit:120,sort:'CreatedAt'});
-    const msgs = d.list||[];
-
-    // Update member count in header
-    const uniqueUsers = new Set(msgs.map(m=>m.user_email||m.UserEmail||'')).size;
-    const statusEl = qs('chat-status');
-    if(statusEl) statusEl.textContent = `${uniqueUsers} คนออนไลน์ · ${msgs.length} ข้อความ`;
-
-    if(!msgs.length){
-      el.innerHTML=`<div class="empty"><span class="ei">💬</span><h3>ยังไม่มีข้อความ</h3><p>เริ่มสนทนาก่อนเลย!</p></div>`;
-      lastMsgCnt=0; return;
-    }
-
-    const myEmail = AUTH.user?.email||'';
-    const wasBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    const isNewMsg  = msgs.length > lastMsgCnt && lastMsgCnt > 0;
-
-    el.innerHTML = msgs.map((m,i)=>renderMsgRow(m, msgs[i-1]||null, myEmail)).join('');
-
-    // Show new message pill if not at bottom
-    if(isNewMsg && !wasBottom){
-      const pill = qs('new-msg-pill');
-      if(pill) pill.style.display='block';
-    }
-
-    if(wasBottom || force || lastMsgCnt===0) scrollBottom();
-
-    // Push notification for new messages
-    if(isNewMsg && Notification.permission==='granted'){
-      const newM = msgs[msgs.length-1];
-      const senderName = newM.user_name||newM.UserName||'สมาชิก';
-      if((newM.user_email||newM.UserEmail||'') !== myEmail){
-        new Notification(`SmartPlus · ${senderName}`,{
-          body: newM.message||newM.Message||'',
-          icon:'https://smartplusthailand.com/favicon.ico'
-        });
-      }
-    }
-
-    // Badge update when not on chat page
-    if(isNewMsg && lastMsgCnt>0){
-      const badge = qs('chat-badge');
-      if(badge && curPage!=='chat'){ badge.textContent=msgs.length-lastMsgCnt; badge.style.display='flex'; }
-    }
-
-    lastMsgCnt = msgs.length;
-    lastSeenId = msgs[msgs.length-1]?.Id || msgs[msgs.length-1]?.id || null;
-  }catch(e){
-    if(String(e.message).includes('429')) on429();
-    else console.warn('chat:',e);
-  }
+    const d=await API.list(CFG.tbl.chat,{limit:80,sort:'CreatedAt'});
+    const msgs=d.list||[];
+    if(!msgs.length){ el.innerHTML=`<div class="empty"><span class="ei">💬</span><h3>ยังไม่มีข้อความ</h3><p>เริ่มสนทนาก่อนเลย!</p></div>`; return; }
+    const wasBottom = el.scrollHeight-el.scrollTop-el.clientHeight < 80;
+    el.innerHTML=msgs.map(m=>{
+      const own = m.user_email===AUTH.user?.email||m.UserEmail===AUTH.user?.email;
+      const name = esc(m.user_name||m.UserName||m.user_email||'?');
+      const text = esc(m.message||m.Message||'');
+      const t = fmtTime(m.CreatedAt||m.created_at);
+      return `
+      <div class="msg-row ${own?'own':''}">
+        <div class="msg-av">${(name[0]||'?').toUpperCase()}</div>
+        <div class="msg-body">
+          <div class="msg-name">${name}</div>
+          <div class="msg-bubble">${text}</div>
+          <div class="msg-time">${t}</div>
+        </div>
+      </div>`;
+    }).join('');
+    if(wasBottom||msgs.length===lastMsgCnt) scrollBottom();
+    lastMsgCnt=msgs.length;
+  }catch(e){ console.warn('chat:',e); }
 }
 
-/* ── Typing indicator simulation ── */
-function onChatTyping(){
-  // Show own typing dots briefly for UX — purely local
-}
-function showTyping(name){
-  const el = qs('typing-ind');
-  if(!el) return;
-  el.style.display='flex';
-  clearTimeout(window._typingHide);
-  window._typingHide = setTimeout(()=>{ el.style.display='none'; }, 2500);
-}
-
-/* ── Scroll ── */
-function scrollBottom(){
-  const el = qs('chat-msgs');
-  setTimeout(()=>{ el.scrollTop=el.scrollHeight; }, 80);
-  const pill = qs('new-msg-pill');
-  if(pill) pill.style.display='none';
+async function checkChatBadge(){
+  try{
+    if(!CFG.tbl.chat) return;
+    const c=await API.count(CFG.tbl.chat);
+    if(c.count>lastMsgCnt&&lastMsgCnt>0){
+      const badge=qs('chat-badge');
+      badge.textContent=c.count-lastMsgCnt;
+      badge.style.display='flex';
+    }
+  }catch{}
 }
 
-/* ── Send text ── */
 async function sendMsg(){
-  const inp = qs('chat-in');
-  let text = inp.value.trim();
+  const inp=qs('chat-in');
+  const text=inp.value.trim();
   if(!text) return;
   if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Table ID ของ Chat','error');
-
-  // Prepend reply marker
-  if(replyCtx){
-    text = `⟦reply:${replyCtx.name}|${replyCtx.text.slice(0,60)}⟧${text}`;
-    cancelReply();
-  }
-
-  inp.value=''; autoResizeTa(inp);
-  closeEmoji();
-
-  // Optimistic bubble
-  const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
-  const tempId = 'temp-'+Date.now();
-  const tempDiv = document.createElement('div');
-  tempDiv.id = 'msg-'+tempId;
-  tempDiv.innerHTML = renderMsgRow({
-    Id:tempId, user_email:AUTH.user?.email||'', user_name:myName,
-    message:text, CreatedAt:new Date().toISOString()
-  }, null, AUTH.user?.email||'');
-  qs('chat-msgs').insertAdjacentHTML('beforeend', tempDiv.innerHTML);
-  scrollBottom();
-
+  inp.value='';
   try{
     await API.create(CFG.tbl.chat,{
       message:text,
       user_email:AUTH.user?.email||'anonymous',
-      user_name:myName,
-      created_at:new Date().toISOString()
-    });
-    await loadChat();
-  }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
-}
-
-/* ── Send image ── */
-async function sendImage(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  if(file.size > 8*1024*1024) return toast('ไฟล์ใหญ่เกิน 8MB','warn');
-  if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
-
-  toast('กำลังประมวลผลรูป...','info');
-  try{
-    // บีบอัดเหลือ 640px / 65% → base64 ประมาณ 30-60KB ป้องกัน Workers payload limit
-    const compressed = await compressImg(file, 640, 0.65);
-    if(compressed.length > 200000) return toast('รูปใหญ่เกินไป กรุณาลองรูปที่เล็กกว่านี้','warn');
-    const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
-    await API.create(CFG.tbl.chat,{
-      message:`⟦img⟧${compressed}`,
-      user_email:AUTH.user?.email||'anonymous',
-      user_name:myName,
+      user_name:AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'สมาชิก',
       created_at:new Date().toISOString()
     });
     await loadChat();
     scrollBottom();
-    toast('ส่งรูปสำเร็จ','success');
-  }catch(e){
-    if(String(e.message).includes('429')) { on429(); toast('ส่งไม่ได้ตอนนี้ กรุณาลองใหม่อีกครั้ง','warn'); }
-    else toast('อัปโหลดไม่สำเร็จ: '+e.message,'error');
-  }
-  event.target.value='';
+    lastMsgCnt++;
+    qs('chat-badge').style.display='none';
+  }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
 }
 
-/* ── Compress image to base64 ── */
-function compressImg(file, maxPx, quality){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = ()=>{
-      URL.revokeObjectURL(url);
-      let w=img.width, h=img.height;
-      if(w>maxPx||h>maxPx){ const r=Math.min(maxPx/w,maxPx/h); w=Math.round(w*r); h=Math.round(h*r); }
-      const canvas = document.createElement('canvas');
-      canvas.width=w; canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = ()=>reject(new Error('อ่านรูปไม่ได้'));
-    img.src = url;
-  });
-}
+function scrollBottom(){ const el=qs('chat-msgs'); setTimeout(()=>{ el.scrollTop=el.scrollHeight; },80); }
 
-/* ── Message actions (right-click / long press) ── */
-function showMsgActions(id, role, senderName, rawMsg, el){
-  closeAllReactionBars();
-  const { text, isDeleted } = parseMsg(rawMsg);
-  if(isDeleted) return;
+/* ================================================
+   ANALYTICS
+================================================ */
+let payChartObj=null, actChartObj=null;
 
-  const bar = document.createElement('div');
-  bar.className = 'reaction-bar';
-  bar.id = 'rbar-'+id;
-
-  // Reaction emojis
-  const reacts = REACT_EMOJIS.map(e=>
-    `<button class="rbar-btn" onclick="toggleReaction('${esc(id)}','${e}');closeAllReactionBars()" title="${e}">${e}</button>`
-  ).join('');
-
-  // Reply + delete buttons
-  const replyBtn = `<button class="rbar-btn" onclick="setReply('${esc(senderName)}','${esc(text.slice(0,60).replace(/'/g,"\\'"))}');closeAllReactionBars()" title="ตอบกลับ">↩️</button>`;
-  const delBtn = role==='own' ? `<button class="rbar-btn" onclick="deleteMsg('${esc(id)}');closeAllReactionBars()" title="ลบ">🗑️</button>` : '';
-
-  bar.innerHTML = reacts + replyBtn + delBtn;
-  el.style.position='relative';
-  el.appendChild(bar);
-
-  // Close on outside click
-  setTimeout(()=>{
-    document.addEventListener('click', closeAllReactionBars, {once:true});
-  },10);
-}
-
-function closeAllReactionBars(){
-  document.querySelectorAll('.reaction-bar').forEach(b=>b.remove());
-}
-
-/* ── Reply ── */
-function setReply(name, text){
-  replyCtx = {name, text};
-  qs('rp-name').textContent = name;
-  qs('rp-text').textContent = text;
-  qs('reply-preview').style.display='flex';
-  qs('chat-in').focus();
-}
-function cancelReply(){
-  replyCtx = null;
-  qs('reply-preview').style.display='none';
-}
-
-/* ── Reactions — sync to NocoDB ── */
-async function toggleReaction(id, emoji){
-  const myEmail = AUTH.user?.email||'';
-  if(!myEmail || !CFG.tbl.chat) return;
-
-  try{
-    // ดึง reactions ปัจจุบันจาก DB
-    const row = await API.get(CFG.tbl.chat, id);
-    let dbRx = {};
-    try{ dbRx = JSON.parse(row.reactions||row.Reactions||'{}'); }catch{}
-    if(!dbRx._users) dbRx._users = {};
-
-    const prevEmoji = dbRx._users[myEmail];
-    if(prevEmoji === emoji){
-      // Toggle off
-      delete dbRx._users[myEmail];
-      dbRx[emoji] = Math.max(0,(dbRx[emoji]||1)-1);
-      if(!dbRx[emoji]) delete dbRx[emoji];
-    } else {
-      // Remove previous
-      if(prevEmoji){
-        dbRx[prevEmoji] = Math.max(0,(dbRx[prevEmoji]||1)-1);
-        if(!dbRx[prevEmoji]) delete dbRx[prevEmoji];
-      }
-      dbRx._users[myEmail] = emoji;
-      dbRx[emoji] = (dbRx[emoji]||0)+1;
-    }
-
-    await API.update(CFG.tbl.chat, id, {reactions: JSON.stringify(dbRx)});
-
-    // อัปเดต localStorage ด้วยเพื่อ fallback
-    loadChatReactions();
-    chatReactions[id] = {};
-    Object.entries(dbRx).filter(([k])=>k!=='_users').forEach(([k,v])=>{ chatReactions[id][k]=v; });
-    chatReactions[id]._mine = dbRx._users[myEmail]||'';
-    if(!chatReactions[id]._mine) delete chatReactions[id]._mine;
-    saveChatReactions();
-
-  }catch(e){
-    // Fallback: localStorage only
-    console.warn('reaction NocoDB sync failed, using localStorage:', e);
-    loadChatReactions();
-    if(!chatReactions[id]) chatReactions[id]={};
-    const rx = chatReactions[id];
-    if(rx._mine===emoji){
-      rx[emoji]=Math.max(0,(rx[emoji]||1)-1); if(!rx[emoji]) delete rx[emoji]; delete rx._mine;
-    } else {
-      if(rx._mine){ const p=rx._mine; rx[p]=Math.max(0,(rx[p]||1)-1); if(!rx[p]) delete rx[p]; }
-      rx._mine=emoji; rx[emoji]=(rx[emoji]||0)+1;
-    }
-    if(!rx._mine && Object.keys(rx).filter(k=>k!=='_mine').length===0) delete chatReactions[id];
-    saveChatReactions();
-  }
-  loadChat();
-}
-
-/* ── Delete message ── */
-async function deleteMsg(id){
-  const confirmed = await showConfirmModal('ลบข้อความ','ต้องการลบข้อความนี้ใช่ไหม?','ลบ','ยกเลิก');
-  if(!confirmed) return;
-  try{
-    await API.update(CFG.tbl.chat, id, {message:'⟦del⟧'});
-    await loadChat();
-    toast('ลบข้อความแล้ว','success');
-  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
-}
-
-/* ── Emoji picker ── */
-function buildEmojiPicker(){
-  const el = qs('emoji-picker');
-  if(el.innerHTML) return;
-  el.innerHTML = EMOJIS.map(e=>
-    `<button class="emoji-btn" onclick="insertEmoji('${e}')">${e}</button>`
-  ).join('');
-}
-function toggleEmoji(){
-  emojiOpen = !emojiOpen;
-  const el = qs('emoji-picker');
-  el.style.display = emojiOpen ? 'grid' : 'none';
-  if(emojiOpen){ buildEmojiPicker(); qs('chat-in').focus(); }
-}
-function closeEmoji(){ emojiOpen=false; const el=qs('emoji-picker'); if(el) el.style.display='none'; }
-function insertEmoji(e){
-  const inp = qs('chat-in');
-  const pos = inp.selectionStart||inp.value.length;
-  inp.value = inp.value.slice(0,pos)+e+inp.value.slice(pos);
-  inp.focus();
-  autoResizeTa(inp);
-}
-
-/* ── Textarea auto-resize ── */
-function autoResizeTa(el){
-  el.style.height='auto';
-  el.style.height=Math.min(el.scrollHeight,96)+'px';
-}
-
-/* ── Image lightbox ── */
-function openLightbox(src){
-  const box = document.createElement('div');
-  box.className='img-lightbox';
-  box.style.flexDirection='column';
-  box.style.gap='14px';
-  const safeUrl = esc(src);
-  box.innerHTML=`
-    <img src="${safeUrl}" alt="ภาพ" style="max-width:95vw;max-height:78vh;border-radius:10px;object-fit:contain;display:block;box-shadow:0 20px 60px rgba(0,0,0,.7)">
-    <div style="display:flex;gap:10px;justify-content:center">
-      <a href="${safeUrl}" download target="_blank" rel="noopener"
-         style="background:var(--green);color:#030E07;padding:9px 22px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px"
-         onclick="event.stopPropagation()">⬇ ดาวน์โหลด</a>
-      <button onclick="this.closest('.img-lightbox').remove()"
-         style="background:var(--card);border:1px solid var(--border);color:var(--text-s);padding:9px 22px;border-radius:10px;font-size:13px;cursor:pointer">✕ ปิด</button>
-    </div>`;
-  box.onclick=(e)=>{ if(e.target===box) box.remove(); };
-  document.body.appendChild(box);
-}
-
-/* ── Reload expired NocoDB signed URL ── */
-async function reloadMsgImg(imgEl, msgId){
-  imgEl.onerror = null; // ตัด onerror ทันทีก่อนทำอะไรทั้งนั้น
-  const key = String(msgId);
-  if(_imgReloadDone.has(key)){
-    // เคยลองแล้ว ล้มเหลว → แสดง placeholder แทน
-    imgEl.style.display='none';
-    const ph = document.createElement('div');
-    ph.style.cssText='width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)';
-    ph.textContent='🖼 โหลดไม่ได้';
-    imgEl.parentNode?.insertBefore(ph, imgEl.nextSibling);
-    return;
-  }
-  _imgReloadDone.add(key);
-  try{
-    const row = await API.get(CFG.tbl.chat, msgId);
-    const raw = row.message||row.Message||'';
-    if(raw.startsWith('⟦img⟧')){
-      const newUrl = raw.slice(5);
-      if(newUrl && newUrl !== imgEl.src){
-        imgEl.onerror = ()=>{ imgEl.style.opacity='.3'; }; // one more safety net
-        imgEl.src = newUrl;
-        return;
-      }
-    }
-    // URL ใน DB ก็เหมือนเดิม → ไม่มีทางโหลดได้
-    imgEl.style.opacity='.3';
-  }catch(e){
-    if(String(e.message).includes('429')) on429();
-    else console.warn('reloadMsgImg:', e);
-    imgEl.style.opacity='.3';
-  }
-}
-
-/* ── Badge check (background polling) ── */
-async function checkChatBadge(){
-  try{
-    if(!CFG.tbl.chat) return;
-    const c = await API.count(CFG.tbl.chat);
-    if(c.count > lastMsgCnt && lastMsgCnt > 0){
-      const badge = qs('chat-badge');
-      if(curPage==='chat'){
-        // On chat page — show typing then reload
-        showTyping('สมาชิก');
-        setTimeout(()=>loadChat(), 1200);
-      } else {
-        badge.textContent = c.count-lastMsgCnt;
-        badge.style.display = 'flex';
-      }
-    }
-  }catch(e){ if(String(e.message).includes('429')) on429(); }
-}
+async function loadAnalytics(){
   // Payment by month
   let monthData=Array(12).fill(0);
   if(CFG.tbl.pay){
