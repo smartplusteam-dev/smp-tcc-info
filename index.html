@@ -602,13 +602,15 @@ a{color:var(--green);text-decoration:none}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .ebook-grid{grid-template-columns:repeat(2,1fr)}
   .modal-box{padding:22px 18px}
-  /* Chat page on mobile — shrink to visible area above bottom-nav */
-  #page-chat,#page-chat.active{
-    height:calc(100dvh - 64px - env(safe-area-inset-bottom,0px))!important;
-    max-height:calc(100dvh - 64px - env(safe-area-inset-bottom,0px))!important;
+  /* Reserve space for bottom-nav at #main-app level — content-area (flex:1) auto-shrinks */
+  #main-app.visible{
+    padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));
+    box-sizing:border-box;
   }
-  .chat-input-area{
-    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  /* page-chat fills what's left — no viewport math needed */
+  #page-chat,#page-chat.active{
+    height:100%!important;
+    max-height:100%!important;
   }
 }
 @media(min-width:769px){
@@ -2251,15 +2253,26 @@ async function loadPayHist(){
    CHAT POLLING — 3s
 ================================================ */
 let pollTimer = null;
+let _pollInterval = 6000;   // เริ่มที่ 6s ป้องกัน rate-limit
+let _imgReloadDone = new Set(); // ติดตาม msgId ที่พยายาม reload แล้ว (ป้องกัน loop)
 
 function startPolling(){
   if(!CFG.tbl.chat) return;
+  stopPolling();
   pollTimer = setInterval(()=>{
     if(curPage==='chat') loadChat();
     else checkChatBadge();
-  }, 3000);
+  }, _pollInterval);
 }
 function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+
+/* ── 429 backoff: ถ้า rate-limit ให้ชะลอ polling ── */
+function on429(){
+  stopPolling();
+  _pollInterval = Math.min(_pollInterval * 2, 30000); // สูงสุด 30s
+  setTimeout(startPolling, _pollInterval);
+  console.warn(`Rate limit hit — next poll in ${_pollInterval/1000}s`);
+}
 
 /* ================================================
    CHAT v2 — LINE-like
@@ -2360,10 +2373,15 @@ function renderMsgRow(m, prevM, myEmail){
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
   } else if(isImg){
-    bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
-      onclick="openLightbox('${esc(imgUrl)}')"
-      onerror="reloadMsgImg(this,'${esc(id)}')"
-      loading="lazy">`;
+    // ถ้า ID นี้เคย reload ล้มเหลวแล้ว → แสดง placeholder ตรงๆ ไม่ทำ HTTP call อีก
+    if(_imgReloadDone.has(String(id))){
+      bubbleInner = `<div style="width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)">🖼 โหลดไม่ได้</div>`;
+    } else {
+      bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
+        onclick="openLightbox('${esc(imgUrl)}')"
+        onerror="reloadMsgImg(this,'${esc(id)}')"
+        loading="lazy">`;
+    }
   } else {
     bubbleInner = quoteHtml + linkify(text);
   }
@@ -2457,7 +2475,10 @@ async function loadChat(force=false){
 
     lastMsgCnt = msgs.length;
     lastSeenId = msgs[msgs.length-1]?.Id || msgs[msgs.length-1]?.id || null;
-  }catch(e){ console.warn('chat:',e); }
+  }catch(e){
+    if(String(e.message).includes('429')) on429();
+    else console.warn('chat:',e);
+  }
 }
 
 /* ── Typing indicator simulation ── */
@@ -2523,13 +2544,14 @@ async function sendMsg(){
 async function sendImage(event){
   const file = event.target.files[0];
   if(!file) return;
-  if(file.size > 5*1024*1024) return toast('ไฟล์ใหญ่เกิน 5MB (chat ใช้ base64)','warn');
+  if(file.size > 8*1024*1024) return toast('ไฟล์ใหญ่เกิน 8MB','warn');
   if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
 
   toast('กำลังประมวลผลรูป...','info');
   try{
-    // บีบอัดรูปก่อน encode base64 เพื่อประหยัดพื้นที่
-    const compressed = await compressImg(file, 900, 0.78);
+    // บีบอัดเหลือ 640px / 65% → base64 ประมาณ 30-60KB ป้องกัน Workers payload limit
+    const compressed = await compressImg(file, 640, 0.65);
+    if(compressed.length > 200000) return toast('รูปใหญ่เกินไป กรุณาลองรูปที่เล็กกว่านี้','warn');
     const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
     await API.create(CFG.tbl.chat,{
       message:`⟦img⟧${compressed}`,
@@ -2540,7 +2562,10 @@ async function sendImage(event){
     await loadChat();
     scrollBottom();
     toast('ส่งรูปสำเร็จ','success');
-  }catch(e){ toast('อัปโหลดไม่สำเร็จ: '+e.message,'error'); }
+  }catch(e){
+    if(String(e.message).includes('429')) { on429(); toast('ส่งไม่ได้ตอนนี้ กรุณาลองใหม่อีกครั้ง','warn'); }
+    else toast('อัปโหลดไม่สำเร็จ: '+e.message,'error');
+  }
   event.target.value='';
 }
 
@@ -2727,15 +2752,36 @@ function openLightbox(src){
 
 /* ── Reload expired NocoDB signed URL ── */
 async function reloadMsgImg(imgEl, msgId){
-  imgEl.onerror = null; // prevent infinite loop
+  imgEl.onerror = null; // ตัด onerror ทันทีก่อนทำอะไรทั้งนั้น
+  const key = String(msgId);
+  if(_imgReloadDone.has(key)){
+    // เคยลองแล้ว ล้มเหลว → แสดง placeholder แทน
+    imgEl.style.display='none';
+    const ph = document.createElement('div');
+    ph.style.cssText='width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)';
+    ph.textContent='🖼 โหลดไม่ได้';
+    imgEl.parentNode?.insertBefore(ph, imgEl.nextSibling);
+    return;
+  }
+  _imgReloadDone.add(key);
   try{
     const row = await API.get(CFG.tbl.chat, msgId);
     const raw = row.message||row.Message||'';
     if(raw.startsWith('⟦img⟧')){
       const newUrl = raw.slice(5);
-      if(newUrl && newUrl !== imgEl.src){ imgEl.src = newUrl; }
+      if(newUrl && newUrl !== imgEl.src){
+        imgEl.onerror = ()=>{ imgEl.style.opacity='.3'; }; // one more safety net
+        imgEl.src = newUrl;
+        return;
+      }
     }
-  }catch(e){ console.warn('reloadMsgImg:', e); imgEl.style.opacity='.3'; }
+    // URL ใน DB ก็เหมือนเดิม → ไม่มีทางโหลดได้
+    imgEl.style.opacity='.3';
+  }catch(e){
+    if(String(e.message).includes('429')) on429();
+    else console.warn('reloadMsgImg:', e);
+    imgEl.style.opacity='.3';
+  }
 }
 
 /* ── Badge check (background polling) ── */
@@ -2754,10 +2800,8 @@ async function checkChatBadge(){
         badge.style.display = 'flex';
       }
     }
-  }catch{}
+  }catch(e){ if(String(e.message).includes('429')) on429(); }
 }
-
-async function loadAnalytics(){
   // Payment by month
   let monthData=Array(12).fill(0);
   if(CFG.tbl.pay){
