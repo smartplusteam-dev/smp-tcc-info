@@ -168,6 +168,8 @@ a{color:var(--green);text-decoration:none}
 ================================================ */
 .page{display:none;min-height:100%;padding:28px 28px 100px;animation:fadeUp .2s ease}
 .page.active{display:block}
+#page-tcc{min-height:unset;padding:0;height:calc(100vh - 0px)}
+#page-tcc.active{display:flex}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .page-header{margin-bottom:24px}
 .page-title{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--text)}
@@ -712,6 +714,9 @@ a{color:var(--green);text-decoration:none}
     <div class="nav-item" id="snav-submit" onclick="navigate('submit')">
       <i data-lucide="clipboard-list"></i>กรอกข้อมูล
     </div>
+    <div class="nav-item" id="snav-tcc" onclick="navigate('tcc')">
+      <i data-lucide="store"></i>TCC Menu
+    </div>
     <div class="nav-item" id="snav-analytics" onclick="navigate('analytics')">
       <i data-lucide="bar-chart-2"></i>Analytics
     </div>
@@ -1069,6 +1074,41 @@ a{color:var(--green);text-decoration:none}
       </div>
     </div>
 
+    <!-- ──── TCC MENU ──── -->
+    <div class="page" id="page-tcc" style="padding:0;height:100%;display:none;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font-family:var(--font-h);font-size:17px;font-weight:700;color:var(--text)">🏪 TCC Menu</div>
+        <div style="font-size:11px;color:var(--text-s);margin-top:2px">Trader Cafe Club</div>
+        <a href="https://customer-information.tradercafeclub.workers.dev/#information" target="_blank"
+          style="margin-left:auto;font-size:11px;color:var(--green);border:1px solid var(--green-d);padding:4px 10px;border-radius:8px;text-decoration:none;flex-shrink:0">
+          เปิดในแท็บใหม่ ↗
+        </a>
+      </div>
+      <div id="tcc-iframe-wrap" style="flex:1;position:relative;background:var(--bg)">
+        <div id="tcc-loading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);z-index:2">
+          <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
+          <div style="font-size:13px;color:var(--text-s)">กำลังโหลด TCC Menu...</div>
+        </div>
+        <div id="tcc-blocked" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);z-index:3;padding:28px;text-align:center">
+          <div style="font-size:40px">🔒</div>
+          <div style="font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--text)">ไม่สามารถโหลดในกรอบนี้ได้</div>
+          <div style="font-size:13px;color:var(--text-s);line-height:1.6">เซิร์ฟเวอร์ TCC ไม่อนุญาตให้แสดงในเฟรม<br>กรุณาเปิดในแท็บใหม่แทน</div>
+          <a href="https://customer-information.tradercafeclub.workers.dev/#information" target="_blank"
+            class="btn btn-gold" style="width:auto;padding:12px 28px;margin-top:4px;text-decoration:none">
+            🌐 เปิด TCC Menu
+          </a>
+        </div>
+        <iframe id="tcc-iframe"
+          src=""
+          style="width:100%;height:100%;border:none;display:block"
+          allow="camera; microphone; fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+          onload="onTccLoad()"
+          onerror="onTccError()">
+        </iframe>
+      </div>
+    </div>
+
   </div><!-- /content-area -->
 </div><!-- /main-app -->
 
@@ -1081,11 +1121,11 @@ a{color:var(--green);text-decoration:none}
       </div>
       <span>หน้าหลัก</span>
     </div>
-    <div class="bnav-item" id="bnav-ebooks" onclick="bnavTap(this,'ebooks')">
+    <div class="bnav-item" id="bnav-tcc" onclick="bnavTap(this,'tcc')">
       <div class="bnav-icon-wrap">
-        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
-      <span>E-Books</span>
+      <span>Trade</span>
     </div>
     <div class="bnav-menu-btn" id="bnav-menu-btn" onclick="toggleMenuDrawer()">
       <div class="bnav-menu-circle" id="bnav-menu-circle">
@@ -1138,6 +1178,10 @@ a{color:var(--green);text-decoration:none}
       <div class="sheet-item" id="smenu-submit" onclick="sheetNav('submit')">
         <div class="sheet-item-icon"><i data-lucide="clipboard-list"></i></div>
         <span>กรอกข้อมูล</span>
+      </div>
+      <div class="sheet-item" id="smenu-tcc" onclick="sheetNav('tcc')">
+        <div class="sheet-item-icon"><i data-lucide="store"></i></div>
+        <span>TCC Menu</span>
       </div>
       <div class="sheet-item" id="smenu-analytics" onclick="sheetNav('analytics')">
         <div class="sheet-item-icon"><i data-lucide="bar-chart-2"></i></div>
@@ -1701,7 +1745,7 @@ function afterLogin(){
    NAVIGATION / ROUTER
 ================================================ */
 let curPage = 'dashboard';
-const PAGES = ['dashboard','ebooks','viewer','qr','payment','chat','analytics','submit','profile'];
+const PAGES = ['dashboard','ebooks','viewer','qr','payment','chat','analytics','submit','profile','tcc'];
 
 function navigate(page){
   if(curPage==='qr' && page!=='qr') stopQR();
@@ -1711,18 +1755,18 @@ function navigate(page){
     qs('page-'+p)?.classList.toggle('active', p===page);
   });
 
-  const navIds = ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile'];
+  const navIds = ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc'];
   navIds.forEach(id=>{
     qs('snav-'+id)?.classList.toggle('active', id===page);
   });
 
   // Update bottom nav 4 items
-  ['dashboard','ebooks','chat','profile'].forEach(id=>{
+  ['dashboard','tcc','chat','profile'].forEach(id=>{
     qs('bnav-'+id)?.classList.toggle('active', id===page);
   });
 
   // Update sheet menu active state
-  ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile'].forEach(id=>{
+  ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc'].forEach(id=>{
     qs('smenu-'+id)?.classList.toggle('active', id===page);
   });
 
@@ -1732,6 +1776,7 @@ function navigate(page){
   if(page==='qr') startQR();
   if(page==='analytics') loadAnalytics();
   if(page==='submit') loadSubmitPage();
+  if(page==='tcc') loadTCC();
 
   icons();
 }
@@ -2271,6 +2316,54 @@ function setBtnLoad(id, loading, label=''){
     btn.innerHTML=`<span>${label}</span>`;
     btn.disabled=false;
   }
+}
+
+/* ================================================
+   TCC MENU (iframe)
+================================================ */
+let tccLoaded = false;
+
+function loadTCC(){
+  if(tccLoaded) return;
+  tccLoaded = true;
+  const iframe = qs('tcc-iframe');
+  const loading = qs('tcc-loading');
+  const blocked = qs('tcc-blocked');
+  loading.style.display = 'flex';
+  blocked.style.display  = 'none';
+  iframe.src = 'https://customer-information.tradercafeclub.workers.dev/#information';
+
+  // Timeout fallback — ถ้าโหลดไม่เสร็จใน 12 วินาที ให้แสดงปุ่มเปิดแท็บใหม่
+  window._tccTimer = setTimeout(()=>{
+    if(loading.style.display !== 'none'){
+      loading.style.display = 'none';
+      blocked.style.display  = 'flex';
+    }
+  }, 12000);
+}
+
+function onTccLoad(){
+  clearTimeout(window._tccTimer);
+  const loading = qs('tcc-loading');
+  const blocked = qs('tcc-blocked');
+  // ตรวจสอบว่า iframe โหลดจริงหรือโดน block
+  try{
+    const doc = qs('tcc-iframe').contentDocument;
+    if(!doc || !doc.body || doc.body.innerHTML === ''){
+      loading.style.display = 'none';
+      blocked.style.display  = 'flex';
+      return;
+    }
+  }catch(e){
+    // Cross-origin block — iframe ยังโหลดอยู่ แต่เข้าถึง DOM ไม่ได้ = ปกติ (OK)
+  }
+  loading.style.display = 'none';
+}
+
+function onTccError(){
+  clearTimeout(window._tccTimer);
+  qs('tcc-loading').style.display = 'none';
+  qs('tcc-blocked').style.display  = 'flex';
 }
 
 /* ================================================
