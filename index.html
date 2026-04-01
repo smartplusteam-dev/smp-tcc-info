@@ -1744,35 +1744,40 @@ async function hashPass(pass){
 }
 
 const API = {
-  hdrs(){ return {'Content-Type':'application/json'}; }, // xc-token ถูกจัดการโดย Worker แล้ว ไม่ต้องส่งจาก client
+  hdrs(){ return {'Content-Type':'application/json'}; }, // xc-token จัดการโดย Worker แล้ว
+
+  /* ── สร้าง NocoDB WHERE query ให้ถูกต้อง ──
+   * ❌ URLSearchParams encode ( ) , → %28 %29 %2C → NocoDB อ่าน filter ไม่ออก → ค้นหาไม่เจอ
+   * ✅ ใช้ manual string + encodeURIComponent เฉพาะ value เท่านั้น
+   */
+  _w(field, val){ return `where=(${field},eq,${encodeURIComponent(val)})`; },
+  _wOr(f1,v1,f2,v2){ return `where=(${f1},eq,${encodeURIComponent(v1)})~or(${f2},eq,${encodeURIComponent(v2)})`; },
+
   async req(method,path,body=null){
-    if(!CFG.url){toast('กรุณาตั้งค่า NocoDB URL ก่อน','error');openConfig();throw new Error('no url');}
+    if(!CFG.url){toast('กรุณาตั้งค่า Worker URL ก่อน','error');openConfig();throw new Error('no url');}
     const opts={method,headers:this.hdrs()};
     if(body) opts.body=JSON.stringify(body);
     const r=await fetch(CFG.url+path,opts);
     if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.msg||e.message||`HTTP ${r.status}`);}
     return r.json();
   },
+
   /* Members */
   findMemberByEmail(email){
-    const q=new URLSearchParams({where:`(email,eq,${email})`,limit:1}).toString();
-    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${this._w('email',email.toLowerCase())}&limit=1`);
   },
   findMemberByName(name){
-    const q=new URLSearchParams({where:`(name,eq,${name})`,limit:1}).toString();
-    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${this._w('name',name)}&limit=1`);
   },
-  // ค้นหาทั้ง email และ name พร้อมกัน (OR filter)
   findMemberByEmailOrName(val){
-    const q=new URLSearchParams({where:`(email,eq,${val})~or(name,eq,${val})`,limit:5}).toString();
-    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${this._wOr('email',val.toLowerCase(),'name',val)}&limit=5`);
   },
   createMember(data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}`,data);},
   updateMember(id,data){return this.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}/${id}`,data);},
+
   /* Submissions */
   getMySubmission(email){
-    const q=new URLSearchParams({where:`(member_email,eq,${email})`,limit:1}).toString();
-    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.submissions}?${q}`);
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.submissions}?${this._w('member_email',email)}&limit=1`);
   },
   createSubmission(data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.submissions}`,data);},
   /* Upload file → แปลงเป็น Base64 แล้วเก็บใน NocoDB Attachment field */
@@ -1806,8 +1811,18 @@ const API = {
       reader.readAsDataURL(file);
     });
   },
-  /* Data */
-  list(tbl,p={}){const q=new URLSearchParams(p).toString();return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}?${q}`);},
+  /* Data — list ใช้ URLSearchParams ได้ เพราะ p มีแค่ limit/sort ไม่มี where filter */
+  list(tbl,p={}){
+    // ถ้า p มี where ให้สร้าง query string เองเพื่อไม่ให้ encode ( ) ,
+    if(p.where){
+      const {where, ...rest} = p;
+      const base = new URLSearchParams(rest).toString();
+      const q = `where=${where}${base?'&'+base:''}`;
+      return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}?${q}`);
+    }
+    const q=new URLSearchParams(p).toString();
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}?${q}`);
+  },
   create(tbl,data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${tbl}`,data);},
   update(tbl,id,data){return this.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`,data);},
   get(tbl,id){return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tbl}/${id}`);},
