@@ -1842,52 +1842,109 @@ async function doLogin(){
   if(!rawInput||!pass) return toast('กรุณากรอกข้อมูลให้ครบ','error');
   setBtnLoad('login-btn',true);
   try{
-    const hashed = await hashPass(pass);
-    let member = null;
-
-    // ตรวจว่าเป็น email หรือ username
-    const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawInput);
-
-    if(isEmail){
-      // ค้นหา by email
-      const res = await API.findMemberByEmail(rawInput.toLowerCase()).catch(e=>{ throw new Error('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message); });
-      member = res?.list?.[0];
-    } else {
-      // ค้นหา by name (username) ก่อน
-      const res = await API.findMemberByName(rawInput).catch(e=>{ throw new Error('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message); });
-      member = res?.list?.[0];
-      // ถ้าไม่เจอ ลอง email ด้วย (กรณีพิมพ์ไม่มี @)
-      if(!member){
-        const res2 = await API.findMemberByEmail(rawInput.toLowerCase()).catch(()=>null);
-        member = res2?.list?.[0];
-      }
+    // ตรวจว่าตั้งค่า Members table แล้วหรือยัง
+    if(!CFG.tbl.members){
+      throw new Error('ยังไม่ได้ตั้งค่า Members Table ID — กดที่โปรไฟล์ → ตั้งค่า NocoDB');
     }
 
+    const hashed = await hashPass(pass);
+    const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawInput);
+    let member = null;
+    let apiErr  = null;
+
+    // --- ขั้นที่ 1: ค้นหา by email (ถ้าเป็น email) ---
+    if(isEmail){
+      try{
+        const r1 = await API.findMemberByEmail(rawInput.toLowerCase());
+        member = r1?.list?.[0]||null;
+      }catch(e){ apiErr = e; }
+    }
+
+    // --- ขั้นที่ 2: ค้นหา by name ---
+    if(!member){
+      try{
+        const r2 = await API.findMemberByName(rawInput);
+        member = r2?.list?.[0]||null;
+      }catch(e){ if(!apiErr) apiErr = e; }
+    }
+
+    // --- ขั้นที่ 3: ถ้าเป็น email แต่ยังไม่เจอ ลอง by name ด้วย ---
+    if(!member && isEmail){
+      try{
+        const r3 = await API.findMemberByName(rawInput);
+        member = r3?.list?.[0]||null;
+      }catch{}
+    }
+
+    // API ล้มเหลวทั้งหมด
+    if(!member && apiErr){
+      const errMsg = apiErr.message||'';
+      if(errMsg.includes('401')||errMsg.includes('403')){
+        throw new Error('API Token ไม่ถูกต้อง — กรุณาตรวจสอบ Token ใน ⚙️ ตั้งค่า NocoDB');
+      }
+      if(errMsg.includes('404')){
+        throw new Error('ไม่พบ Members Table — กรุณาตรวจสอบ Table ID ใน ⚙️ ตั้งค่า NocoDB');
+      }
+      throw new Error('เชื่อมต่อฐานข้อมูลไม่ได้: ' + errMsg);
+    }
+
+    // ไม่พบ account
     if(!member){
       if(hint){
         hint.style.display='block';
-        hint.innerHTML=`ℹ️ ไม่พบบัญชี <b>${esc(rawInput)}</b> ในระบบ<br>กรุณา <b>สมัครสมาชิก</b> ก่อน หรือตรวจสอบ<br>• ชื่อ/อีเมล ตรงกับที่ลงทะเบียนไว้<br>• ตัวพิมพ์เล็ก/ใหญ่ (case-sensitive)`;
+        hint.innerHTML=`ℹ️ ไม่พบบัญชี "<b>${esc(rawInput)}</b>" ในระบบ<br>
+          👉 กรุณากด <b>สมัครสมาชิก</b> เพื่อสร้างบัญชีใหม่<br>
+          <small style="color:var(--text-d)">หรือตรวจสอบตัวพิมพ์เล็ก/ใหญ่ ให้ตรงกับที่สมัครไว้</small>`;
       }
       throw new Error('ไม่พบบัญชีนี้ในระบบ');
     }
-    if(member.status==='suspended') throw new Error('บัญชีถูกระงับ — กรุณาติดต่อ Admin');
-    if(member.password_hash!==hashed){
+
+    // รองรับชื่อ field หลายรูปแบบ (NocoDB ต่างเวอร์ชัน/ตั้งค่าต่างกัน)
+    const storedHash = member.password_hash || member.Password_Hash ||
+                       member.passwordHash  || member.PasswordHash  || '';
+    const memberStatus = (member.status||member.Status||'active').toLowerCase();
+    const memberRole   = member.role||member.Role||'member';
+    const memberEmail  = member.email||member.Email||rawInput;
+    const memberName   = member.name||member.Name||member.display_name||rawInput.split('@')[0];
+    const memberPhone  = member.phone||member.Phone||'';
+    const memberId     = member.Id||member.id||'';
+
+    if(memberStatus==='suspended'){
+      throw new Error('บัญชีถูกระงับ — กรุณาติดต่อ Admin');
+    }
+
+    // ถ้าไม่มี password_hash แปลว่า Admin สร้าง account ให้แต่ยังไม่ตั้ง password
+    if(!storedHash){
       if(hint){
         hint.style.display='block';
-        hint.innerHTML=`ℹ️ รหัสผ่านไม่ถูกต้อง<br>หากลืมรหัสผ่าน กรุณาติดต่อ Admin`;
+        hint.innerHTML=`⚠️ บัญชีนี้ยังไม่มีรหัสผ่านในระบบ<br>
+          👉 กรุณากด <b>สมัครสมาชิก</b> (ใช้อีเมลเดิม) เพื่อตั้งรหัสผ่าน<br>
+          หรือขอให้ Admin เพิ่ม <code>password_hash</code> ให้`;
+      }
+      throw new Error('ยังไม่มีรหัสผ่านในระบบ — กรุณาสมัครสมาชิกใหม่');
+    }
+
+    if(storedHash !== hashed){
+      if(hint){
+        hint.style.display='block';
+        hint.innerHTML=`ℹ️ รหัสผ่านไม่ถูกต้อง<br>
+          <small style="color:var(--text-d)">ลองตรวจสอบตัวพิมพ์เล็ก/ใหญ่ และเว้นวรรค</small>`;
       }
       throw new Error('รหัสผ่านไม่ถูกต้อง');
     }
-    await API.updateMember(member.Id||member.id,{last_login:new Date().toISOString()}).catch(()=>{});
-    AUTH.save({
-      email:member.email, name:member.name||rawInput,
-      phone:member.phone||'', role:member.role||'member',
-      memberId:member.Id||member.id||''
-    });
+
+    // ✅ Login สำเร็จ
+    await API.updateMember(memberId,{last_login:new Date().toISOString()}).catch(()=>{});
+    AUTH.save({email:memberEmail, name:memberName, phone:memberPhone,
+               role:memberRole, memberId});
     if(hint) hint.style.display='none';
     afterLogin();
-  }catch(e){toast('เข้าสู่ระบบไม่สำเร็จ: '+e.message,'error');}
-  finally{setBtnLoad('login-btn',false,'เข้าสู่ระบบ');}
+
+  }catch(e){
+    toast('เข้าสู่ระบบไม่สำเร็จ: '+e.message,'error');
+  }finally{
+    setBtnLoad('login-btn',false,'เข้าสู่ระบบ');
+  }
 }
 
 async function doRegister(){
@@ -1897,13 +1954,38 @@ async function doRegister(){
   if(!name||!email||!pass) return toast('กรุณากรอกข้อมูลให้ครบ','error');
   if(pass.length<8) return toast('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร','error');
   if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)) return toast('รูปแบบอีเมลไม่ถูกต้อง','error');
+  if(!CFG.tbl.members) return toast('ยังไม่ได้ตั้งค่า Members Table — กด ⚙️ ตั้งค่า NocoDB ก่อน','error');
   setBtnLoad('reg-btn',true);
   try{
-    const exists=await API.findMemberByEmail(email);
-    if(exists?.list?.length>0) throw new Error('อีเมลนี้ถูกใช้งานแล้ว');
-    const hashed=await hashPass(pass);
-    await API.createMember({name,email,password_hash:hashed,status:'active',role:'member',joined_at:new Date().toISOString(),last_login:new Date().toISOString()});
-    toast('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ','success');
+    const hashed = await hashPass(pass);
+    const exists = await API.findMemberByEmail(email).catch(e=>{
+      throw new Error('เชื่อมต่อ DB ไม่ได้: '+e.message);
+    });
+    const existing = exists?.list?.[0];
+
+    if(existing){
+      // มีบัญชีแล้ว — ถ้ายังไม่มี password_hash ให้ตั้งรหัสผ่านให้เลย
+      const hasHash = !!(existing.password_hash||existing.Password_Hash||existing.passwordHash||'');
+      if(hasHash){
+        throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว — กรุณาเข้าสู่ระบบ หรือลืมรหัสผ่านติดต่อ Admin');
+      }
+      // ยังไม่มี hash → อัปเดตให้
+      const id = existing.Id||existing.id||'';
+      await API.updateMember(id,{
+        password_hash:hashed, name:name||existing.name,
+        last_login:new Date().toISOString()
+      });
+      toast('ตั้งรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบ','success');
+    } else {
+      // สร้างบัญชีใหม่
+      await API.createMember({
+        name, email, password_hash:hashed,
+        status:'active', role:'member',
+        joined_at:new Date().toISOString(),
+        last_login:new Date().toISOString()
+      });
+      toast('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ','success');
+    }
     switchTab('login');
     qs('l-email').value=email; qs('l-pass').value=''; qs('l-pass').focus();
   }catch(e){toast('สมัครไม่สำเร็จ: '+e.message,'error');}
@@ -2412,7 +2494,8 @@ function renderMsgRow(m, prevM, myEmail){
   const name = esc(m.user_name||m.UserName||m.user_email||'?');
   const raw  = m.message||m.Message||'';
   const id   = m.Id||m.id||'';
-  const ts   = m.CreatedAt||m.created_at||'';
+  // ✅ FIX: รองรับทุก field name ที่ NocoDB อาจใช้
+  const ts   = m.CreatedAt||m.CreatedAt_orig||m.created_at||m.createdAt||m.timestamp||'';
   const t    = fmtTime(ts);
 
   // grouping
@@ -2623,7 +2706,7 @@ async function sendMsg(){
       message:text,
       user_email:AUTH.user?.email||'anonymous',
       user_name:myName,
-      created_at:new Date().toISOString()
+      CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
     await loadChat();
   }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
@@ -2659,7 +2742,7 @@ async function sendImage(event){
       message:`⟦img⟧${finalImg}`,
       user_email:AUTH.user?.email||'anonymous',
       user_name:myName,
-      created_at:new Date().toISOString()
+      CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
     await loadChat();
     scrollBottom();
@@ -2871,7 +2954,7 @@ async function sendSticker(emoji){
       message:text,
       user_email:AUTH.user?.email||'anonymous',
       user_name:myName,
-      created_at:new Date().toISOString()
+      CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
     await loadChat(); scrollBottom();
   }catch(e){ toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
