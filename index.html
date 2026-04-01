@@ -1352,12 +1352,11 @@ a{color:var(--green);text-decoration:none}
 
     <div class="section-label">NocoDB Cloud</div>
     <div class="form-group">
-      <label class="form-label">Base URL</label>
-      <input type="url" id="c-url" class="form-input" placeholder="https://app.nocodb.com">
-    </div>
-    <div class="form-group">
-      <label class="form-label">API Token (xc-token)</label>
-      <input type="text" id="c-token" class="form-input" placeholder="xc-xxxxxxxxxxxxxxxxxxxxxxxx">
+      <label class="form-label">Base URL (Worker URL)</label>
+      <input type="url" id="c-url" class="form-input" placeholder="https://your-worker.workers.dev">
+      <div style="margin-top:6px;padding:8px 12px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:8px;font-size:11px;color:var(--text-s);line-height:1.6">
+        🔒 <b>API Token (xc-token)</b> เก็บอยู่ใน Cloudflare Worker Secret แล้ว — ไม่ต้องกรอกที่นี่
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Base ID</label>
@@ -1689,8 +1688,8 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
    CONFIG
 ================================================ */
 let CFG = {
-  url:   'https://smartplus.smartplusteam.workers.dev',
-  token: '',
+  url:   'https://smartplus.smartplusteam.workers.dev', // Worker URL — ไม่ใช่ NocoDB โดยตรง
+  // ไม่มี token ที่นี่ — xc-token เก็บใน Worker (Cloudflare Secret) เท่านั้น
   base:  'p2euurotzh3sl4r',
   tbl:{ books:'mgyegqzp961xogx', chat:'m77tqj5r25mue0n', pay:'mhqqt37k6oqcyav',
         members:'moy8kg0q267spu4', submissions:'mkh4jjku0nz9qca' },
@@ -1701,7 +1700,8 @@ function loadCFG(){
   const s = localStorage.getItem('sp_cfg');
   if(s){ try{
     const v=JSON.parse(s);
-    CFG.url=v.url||CFG.url; CFG.token=v.token||CFG.token; CFG.base=v.base||CFG.base;
+    CFG.url=v.url||CFG.url; CFG.base=v.base||CFG.base;
+    // ไม่โหลด token จาก localStorage — token อยู่ใน Worker เท่านั้น
     if(v.tbl){
       CFG.tbl.books=v.tbl.books||CFG.tbl.books; CFG.tbl.chat=v.tbl.chat||CFG.tbl.chat;
       CFG.tbl.pay=v.tbl.pay||CFG.tbl.pay; CFG.tbl.members=v.tbl.members||CFG.tbl.members;
@@ -1711,7 +1711,8 @@ function loadCFG(){
   }catch{}}
 }
 function saveCFG(){
-  CFG.url=qs('c-url').value.trim().replace(/\/$/,''); CFG.token=qs('c-token').value.trim(); CFG.base=qs('c-base').value.trim();
+  CFG.url=qs('c-url').value.trim().replace(/\/$/,''); CFG.base=qs('c-base').value.trim();
+  // ไม่บันทึก token ใน localStorage — token อยู่ใน Worker (Cloudflare Secret) เท่านั้น
   CFG.tbl.books=qs('c-tbl-books').value.trim(); CFG.tbl.chat=qs('c-tbl-chat').value.trim();
   CFG.tbl.pay=qs('c-tbl-pay').value.trim();
   CFG.tbl.members=qs('c-tbl-members')?.value.trim()||'';
@@ -1723,7 +1724,7 @@ function saveCFG(){
   closeConfig();
 }
 function openConfig(){
-  qs('c-url').value=CFG.url; qs('c-token').value=CFG.token; qs('c-base').value=CFG.base;
+  qs('c-url').value=CFG.url; qs('c-base').value=CFG.base;
   qs('c-tbl-books').value=CFG.tbl.books; qs('c-tbl-chat').value=CFG.tbl.chat; qs('c-tbl-pay').value=CFG.tbl.pay;
   if(qs('c-tbl-members'))qs('c-tbl-members').value=CFG.tbl.members||'';
   if(qs('c-tbl-submissions'))qs('c-tbl-submissions').value=CFG.tbl.submissions||'';
@@ -1732,7 +1733,6 @@ function openConfig(){
   qs('cfg-modal').classList.add('open');
 }
 function closeConfig(){ qs('cfg-modal').classList.remove('open'); }
-qs('cfg-modal').addEventListener('click', e => { if(e.target===qs('cfg-modal')) closeConfig(); });
 
 /* ================================================
    NocoDB API — Members Table Auth + File Upload
@@ -1744,7 +1744,7 @@ async function hashPass(pass){
 }
 
 const API = {
-  hdrs(){ return {'Content-Type':'application/json','xc-token':CFG.token}; },
+  hdrs(){ return {'Content-Type':'application/json'}; }, // xc-token ถูกจัดการโดย Worker แล้ว ไม่ต้องส่งจาก client
   async req(method,path,body=null){
     if(!CFG.url){toast('กรุณาตั้งค่า NocoDB URL ก่อน','error');openConfig();throw new Error('no url');}
     const opts={method,headers:this.hdrs()};
@@ -1783,7 +1783,7 @@ const API = {
       fd.append('file', file);
       const r = await fetch(
         `${CFG.url}/api/v1/db/storage/upload?path=noco/${CFG.base}/submissions`,
-        { method:'POST', headers:{'xc-token':CFG.token}, body:fd }
+        { method:'POST', body:fd }  // ไม่ส่ง xc-token — Worker จัดการให้
       );
       if(r.ok){
         const res = await r.json();
@@ -3202,6 +3202,11 @@ function onTccError(){
 document.addEventListener('DOMContentLoaded',()=>{
   loadCFG();
   AUTH.load();
+
+  // ผูก event ปิด modal เมื่อคลิก backdrop (ย้ายมาไว้นี่เพื่อรอ DOM โหลดเสร็จก่อน)
+  const cfgModal = qs('cfg-modal');
+  if(cfgModal) cfgModal.addEventListener('click', e => { if(e.target===cfgModal) closeConfig(); });
+
   if(!!AUTH.token && !!AUTH.user){
     afterLogin();
   } else {
