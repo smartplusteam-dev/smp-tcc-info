@@ -307,8 +307,20 @@ a{color:var(--green);text-decoration:none}
 .msg-quote-text{color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
 
 /* ── Image message ── */
-.msg-img{max-width:210px;border-radius:12px;cursor:pointer;display:block;border:1px solid var(--border);transition:filter .15s}
+.msg-img{max-width:220px;max-height:280px;border-radius:12px;cursor:pointer;display:block;border:1px solid var(--border);transition:filter .15s;object-fit:cover}
 .msg-img:hover{filter:brightness(.85)}
+.msg-img-placeholder{width:200px;height:140px;background:var(--surface);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-d);font-size:11px;border:1px dashed var(--border)}
+.msg-img-placeholder span{font-size:28px}
+
+/* ── Sticker message ── */
+.msg-sticker{font-size:80px;line-height:1;padding:4px;user-select:none;display:inline-block;cursor:pointer;transition:transform .15s;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3))}
+.msg-sticker:hover{transform:scale(1.12)}
+.msg-sticker:active{transform:scale(0.92)}
+@keyframes stickerPop{0%{transform:scale(0)}60%{transform:scale(1.18)}80%{transform:scale(0.94)}100%{transform:scale(1)}}
+.msg-sticker.new{animation:stickerPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
+/* Sticker bubble — ไม่มีพื้นหลัง เหมือน LINE */
+.msg-bubble.sticker-bubble{background:transparent!important;border:none!important;padding:2px!important;box-shadow:none!important}
+.msg-bubble.sticker-bubble:active{filter:none}
 
 /* ── Meta (time + read) ── */
 .msg-meta{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-d);margin-top:3px;padding:0 2px}
@@ -351,19 +363,21 @@ a{color:var(--green);text-decoration:none}
 .reply-cancel:hover{color:var(--text)}
 
 /* ── Emoji picker ── */
-.emoji-picker{background:var(--card);border-top:1px solid var(--border);padding:0;display:flex;flex-direction:column;flex-shrink:0;max-height:220px;overflow:hidden;animation:slideUp .15s ease}
-.emoji-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.emoji-tab{flex:1;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text-s);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
-.emoji-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.emoji-picker{background:var(--card);border-top:1px solid var(--border);padding:0;display:flex;flex-direction:column;flex-shrink:0;max-height:260px;overflow:hidden;animation:slideUp .15s ease}
+.emoji-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.emoji-tab{flex:1;padding:10px 4px;font-size:12px;font-weight:600;color:var(--text-s);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.emoji-tab.active{color:var(--green);border-bottom-color:var(--green);background:var(--card)}
 .emoji-content{overflow-y:auto;padding:8px 10px;flex:1}
-.emoji-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:1px}
-.emoji-btn{font-size:22px;padding:5px;border-radius:8px;cursor:pointer;border:none;background:none;transition:background .1s;line-height:1}
-.emoji-btn:hover{background:rgba(255,255,255,.09)}
-.sticker-section{margin-bottom:10px}
-.sticker-section-title{font-size:9px;font-weight:700;color:var(--text-s);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;padding-left:2px}
-.sticker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
-.sticker-btn{font-size:26px;padding:6px;border-radius:10px;cursor:pointer;border:none;background:none;transition:all .15s;line-height:1;text-align:center}
-.sticker-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.2)}
+.emoji-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:2px}
+.emoji-btn{font-size:22px;padding:6px;border-radius:8px;cursor:pointer;border:none;background:none;transition:all .12s;line-height:1}
+.emoji-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.25)}
+/* Sticker Pack header */
+.sticker-pack-hdr{display:flex;align-items:center;gap:6px;padding:6px 2px 4px;margin-bottom:2px;border-bottom:1px solid var(--border);margin-top:4px}
+.sticker-pack-icon{font-size:18px}
+.sticker-pack-name{font-size:11px;font-weight:700;color:var(--text-s);letter-spacing:.5px}
+.sticker-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px}
+.sticker-btn{font-size:36px;padding:8px 4px;border-radius:12px;cursor:pointer;border:none;background:none;transition:all .15s;line-height:1;text-align:center;filter:drop-shadow(0 1px 3px rgba(0,0,0,.2))}
+.sticker-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.3)}
 
 /* ── Input area ── */
 .chat-input-area{display:flex;align-items:flex-end;gap:7px;padding:9px 11px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(9px,env(safe-area-inset-bottom))}
@@ -2473,14 +2487,25 @@ function parseMsg(raw){
   let isDeleted = false;
   let isImg = false;
   let imgUrl = '';
+  let isSticker = false;
+  let stickerEmoji = '';
   let text = raw;
 
   if(raw.startsWith('⟦del⟧')){ isDeleted=true; text=''; }
-  else if(raw.startsWith('⟦sticker⟧')){ 
-    // sticker ใช้ isImg=true แต่เก็บ emoji ใน imgUrl เพื่อ reuse renderer
-    isImg=true; imgUrl='__sticker__'+raw.slice(10); text=''; 
+  else if(raw.startsWith('⟦sticker⟧')){
+    isSticker=true; stickerEmoji=raw.slice(10); text='';
   }
-  else if(raw.startsWith('⟦img⟧')){ isImg=true; imgUrl=raw.slice(5); text=''; }
+  else if(raw.startsWith('⟦img⟧')){
+    const content = raw.slice(5);
+    text='';
+    // ถ้าเป็น URL หรือ base64 → รูปภาพจริง; ถ้าไม่ใช่ → เป็น emoji sticker เก่า
+    if(content.startsWith('http')||content.startsWith('data:')){
+      isImg=true; imgUrl=content;
+    } else {
+      // backward compat: emoji ที่ส่งในรูปแบบ ⟦img⟧emoji
+      isSticker=true; stickerEmoji=content;
+    }
+  }
   else if(raw.startsWith('⟦reply:')){
     const end = raw.indexOf('⟧');
     if(end>-1){
@@ -2490,7 +2515,7 @@ function parseMsg(raw){
       text = raw.slice(end+1);
     }
   }
-  return { text, quote, isDeleted, isImg, imgUrl };
+  return { text, quote, isDeleted, isImg, imgUrl, isSticker, stickerEmoji };
 }
 
 /* ── Date label ── */
@@ -2519,7 +2544,7 @@ function renderMsgRow(m, prevM, myEmail){
   const curName  = m.user_name||m.UserName||m.user_email||'';
   const grouped  = prevM && prevName===curName && prevOwn===own;
 
-  const { text, quote, isDeleted, isImg, imgUrl } = parseMsg(raw);
+  const { text, quote, isDeleted, isImg, imgUrl, isSticker, stickerEmoji } = parseMsg(raw);
 
   // Date separator
   const prevTs = prevM && (prevM.CreatedAt||prevM.created_at||'');
@@ -2547,20 +2572,28 @@ function renderMsgRow(m, prevM, myEmail){
 
   // Bubble content
   let bubbleInner = '';
+  let bubbleClass = 'msg-bubble';
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
+  } else if(isSticker){
+    // สติ๊กเกอร์ — ไม่มีพื้นหลัง เหมือน LINE
+    bubbleClass += ' sticker-bubble';
+    const safeEmoji = stickerEmoji || '😊';
+    bubbleInner = `<div class="msg-sticker" title="สติ๊กเกอร์" onclick="event.stopPropagation()">${safeEmoji}</div>`;
   } else if(isImg){
-    // ตรวจว่าเป็น sticker หรือรูปจริง
-    if(imgUrl.startsWith('__sticker__')){
-      const stickerEmoji = imgUrl.slice(11);
-      bubbleInner = `<div style="font-size:52px;line-height:1;padding:4px 6px;user-select:none" title="สติ๊กเกอร์">${esc(stickerEmoji)}</div>`;
-    } else if(_imgReloadDone.has(String(id))){
-      bubbleInner = `<div style="width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)">🖼 โหลดไม่ได้</div>`;
+    // รูปภาพ — แสดง placeholder ระหว่างโหลด เพื่อไม่ให้เห็น broken image icon
+    const safeUrl = esc(imgUrl);
+    if(_imgReloadDone.has(String(id))){
+      bubbleInner = `<div class="msg-img-placeholder"><span>🖼</span><span>โหลดรูปไม่ได้</span></div>`;
     } else {
-      bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
-        onclick="openLightbox('${esc(imgUrl)}')"
-        onerror="reloadMsgImg(this,'${esc(id)}')"
-        loading="lazy">`;
+      bubbleInner = `<div class="msg-img-wrap" style="position:relative;display:inline-block">
+        <div class="msg-img-placeholder" id="imgph-${esc(id)}" style="position:absolute;inset:0;border-radius:12px;z-index:1"><span>🔄</span><span style="font-size:10px">กำลังโหลด...</span></div>
+        <img class="msg-img" src="${safeUrl}"
+          onclick="openLightbox('${safeUrl}')"
+          onload="const ph=document.getElementById('imgph-${esc(id)}');if(ph)ph.style.display='none'"
+          onerror="reloadMsgImg(this,'${esc(id)}')"
+          loading="lazy" style="min-width:120px;min-height:80px">
+      </div>`;
     }
   } else {
     bubbleInner = quoteHtml + linkify(text);
@@ -2574,7 +2607,7 @@ function renderMsgRow(m, prevM, myEmail){
     <div class="msg-av" style="background:hsl(${strHue(curName)},55%,38%)">${(curName[0]||'?').toUpperCase()}</div>
     <div class="msg-body">
       ${!grouped ? `<div class="msg-name">${name}</div>` : ''}
-      <div class="msg-bubble${isDeleted?' msg-deleted':''}" ${longpressAttr}>${bubbleInner}</div>
+      <div class="${bubbleClass}${isDeleted?' msg-deleted':''}" ${!isSticker?longpressAttr:'onclick="event.stopPropagation()"'}>${bubbleInner}</div>
       ${rxHtml ? `<div class="msg-reactions">${rxHtml}</div>` : ''}
       <div class="msg-meta">
         <span>${t}</span>
@@ -2804,11 +2837,12 @@ function showMsgActions(id, role, senderName, rawMsg, el){
     `<button class="rbar-btn" onclick="toggleReaction('${esc(id)}','${e}');closeAllReactionBars()" title="${e}">${e}</button>`
   ).join('');
 
-  // Reply + delete buttons
+  // Reply + copy + delete buttons
   const replyBtn = `<button class="rbar-btn" onclick="setReply('${esc(senderName)}','${esc(text.slice(0,60).replace(/'/g,"\\'"))}');closeAllReactionBars()" title="ตอบกลับ">↩️</button>`;
-  const delBtn = role==='own' ? `<button class="rbar-btn" onclick="deleteMsg('${esc(id)}');closeAllReactionBars()" title="ลบ">🗑️</button>` : '';
+  const copyBtn  = text ? `<button class="rbar-btn" onclick="navigator.clipboard.writeText('${esc(text.replace(/'/g,"\\'"))}').then(()=>toast('คัดลอกแล้ว','success'));closeAllReactionBars()" title="คัดลอก">📋</button>` : '';
+  const delBtn   = role==='own' ? `<button class="rbar-btn" onclick="deleteMsg('${esc(id)}');closeAllReactionBars()" title="ลบ">🗑️</button>` : '';
 
-  bar.innerHTML = reacts + replyBtn + delBtn;
+  bar.innerHTML = reacts + replyBtn + copyBtn + delBtn;
   el.style.position='relative';
   el.appendChild(bar);
 
@@ -2903,13 +2937,40 @@ async function deleteMsg(id){
 }
 
 /* ── Emoji picker (with Sticker tab) ── */
-const STICKER_SETS = {
-  '😊 ยิ้ม & ตลก': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😗','☺️','😙','😚','🥲','🤗','🤔','🫡','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥'],
-  '❤️ ความรู้สึก': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✨','💫','⭐','🌟','🔥','💯','🎉','🎊','🎈'],
-  '👍 ท่าทาง': ['👍','👎','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👋','🤚','🖐','✋','🖖','🫶','🤝','🙏','👏','🫙','✍️','💪','🦾','🤲'],
-  '🚀 กิจกรรม': ['🚀','💎','💰','📈','📉','💹','🏆','🥇','🎯','🎮','⚽','🏀','🎵','🎶','🎤','🎸','🎹','🎺','🎻','🥁','🎬','🎭','🎨','🖌️','✏️','📝','📚','📖','🔍','🔎'],
-  '🌍 สถานที่ & อื่นๆ': ['🌍','🌏','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🗼','🗽','🗾','⛩️','🗿','🌋','🏔️','⛰️','🏕️','🏖️','🏗️','🏘️','🌃','🌆','🌇','🌉']
-};
+const STICKER_PACKS = [
+  {
+    id:'happy', icon:'😊', name:'Happy & Cute',
+    stickers:['😀','😃','😄','😁','😆','🤣','😂','😊','😇','🥰','😍','🤩','😘','🥳','😎','🤗','😜','😝','😛','🤪','😺','😸','😹','😻','😼','🙀','😽','🎉','✨','🌟']
+  },
+  {
+    id:'love', icon:'❤️', name:'Love',
+    stickers:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💓','💗','💖','💘','💝','😍','🥰','😘','😗','💋','💌','🌹','💐','🌸','🦋','🌈','✨','💫','🫶','🤝']
+  },
+  {
+    id:'crying', icon:'😢', name:'Sad & Crying',
+    stickers:['😢','😭','😿','😞','😔','😟','😕','🙁','☹️','😣','😖','😩','😫','🥺','😤','😠','😡','🤬','💢','😤','😒','😑','😶','😐','🫥','😪','🥱','😴','💤','🌧️']
+  },
+  {
+    id:'greet', icon:'👋', name:'Greetings',
+    stickers:['👋','🤚','✋','🖖','🫱','🤝','🙏','👐','🫶','💪','🦾','👍','👎','👌','🤌','🤏','✌️','🤞','🤟','🤘','☝️','👆','👇','👈','👉','🫵','🫲','🙌','👏','🤲']
+  },
+  {
+    id:'fun', icon:'🎮', name:'Fun & Games',
+    stickers:['🎮','🕹️','🎲','🎯','🎳','🏆','🥇','🎖️','🏅','🎪','🎨','🎭','🎬','🎤','🎧','🎵','🎶','🎸','🎹','🎺','🥁','🎻','🎠','🎡','🎢','🎪','🎟️','🃏','🀄','🎴']
+  },
+  {
+    id:'food', icon:'🍔', name:'Food & Drink',
+    stickers:['🍔','🍕','🌮','🌯','🥗','🍜','🍣','🍱','🍩','🎂','🍰','🧁','🍦','🍧','🍨','🍫','🍬','🍭','🧃','🥤','☕','🍵','🧋','🍺','🥂','🍾','🎁','🛍️','🥡','🍿']
+  },
+  {
+    id:'animals', icon:'🐶', name:'Animals',
+    stickers:['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐸','🐙','🦋','🐝','🐞','🦄','🐲','🦕','🦖','🦀','🦞','🦈','🐬','🦭','🐋','🦒','🐘','🦛','🦏']
+  },
+  {
+    id:'money', icon:'💰', name:'Money & Work',
+    stickers:['💰','💵','💴','💶','💷','💸','💳','💎','🏦','📈','📉','💹','🤑','💲','🪙','💼','📊','🗂️','📋','📌','📍','🖊️','✏️','📝','🖥️','💻','📱','⌨️','🖱️','🖨️']
+  }
+];
 
 let curEmojiTab = 'emoji';
 
@@ -2922,10 +2983,13 @@ function buildEmojiTab(){
 function buildStickerTab(){
   const area = qs('emoji-content-area');
   if(!area) return;
-  area.innerHTML = Object.entries(STICKER_SETS).map(([title, stickers])=>`
-    <div class="sticker-section">
-      <div class="sticker-section-title">${title}</div>
-      <div class="sticker-grid">${stickers.map(s=>`<button class="sticker-btn" onclick="sendSticker('${s}')" title="ส่งสติ๊กเกอร์">${s}</button>`).join('')}</div>
+  area.innerHTML = STICKER_PACKS.map(pack=>`
+    <div class="sticker-pack-hdr">
+      <span class="sticker-pack-icon">${pack.icon}</span>
+      <span class="sticker-pack-name">${pack.name}</span>
+    </div>
+    <div class="sticker-grid">
+      ${pack.stickers.map(s=>`<button class="sticker-btn" onclick="sendSticker('${s}')" title="${s}">${s}</button>`).join('')}
     </div>`).join('');
 }
 
@@ -2962,17 +3026,37 @@ async function sendSticker(emoji){
   if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
   closeEmoji();
   const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
-  // ส่งเป็น ⟦sticker⟧emoji format
   const text = `⟦sticker⟧${emoji}`;
+  const myEmail = AUTH.user?.email||'';
+
+  // Optimistic bubble with animation
+  const tempId = 'stk-'+Date.now();
+  const tempRow = document.createElement('div');
+  tempRow.id = 'msg-'+tempId;
+  tempRow.className = 'msg-row own';
+  tempRow.innerHTML = `
+    <div class="msg-av" style="visibility:hidden">S</div>
+    <div class="msg-body" style="align-items:flex-end">
+      <div class="msg-bubble sticker-bubble">
+        <div class="msg-sticker new">${emoji}</div>
+      </div>
+      <div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span><span class="msg-tick" style="opacity:.5">✓</span></div>
+    </div>`;
+  qs('chat-msgs').appendChild(tempRow);
+  scrollBottom();
+
   try{
     await API.create(CFG.tbl.chat,{
       message:text,
-      user_email:AUTH.user?.email||'anonymous',
+      user_email:myEmail||'anonymous',
       user_name:myName,
-      CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
+      CreatedAt_orig:new Date().toISOString()
     });
     await loadChat(); scrollBottom();
-  }catch(e){ toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
+  }catch(e){
+    tempRow.remove();
+    toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error');
+  }
 }
 
 /* ── Textarea auto-resize ── */
@@ -3003,15 +3087,17 @@ function openLightbox(src){
 
 /* ── Reload expired NocoDB signed URL ── */
 async function reloadMsgImg(imgEl, msgId){
+  // ซ่อนรูปที่โหลดไม่ได้ทันที → ไม่เห็น broken image icon
+  imgEl.style.visibility = 'hidden';
+  const ph = document.getElementById('imgph-'+msgId);
+  if(ph){ ph.style.display='flex'; ph.innerHTML='<span>🔄</span><span style="font-size:10px">กำลังโหลดใหม่...</span>'; }
+
   imgEl.onerror = null; // ตัด onerror ทันทีก่อนทำอะไรทั้งนั้น
   const key = String(msgId);
   if(_imgReloadDone.has(key)){
     // เคยลองแล้ว ล้มเหลว → แสดง placeholder แทน
     imgEl.style.display='none';
-    const ph = document.createElement('div');
-    ph.style.cssText='width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)';
-    ph.textContent='🖼 โหลดไม่ได้';
-    imgEl.parentNode?.insertBefore(ph, imgEl.nextSibling);
+    if(ph){ ph.innerHTML='<span>🖼</span><span style="font-size:10px">โหลดรูปไม่ได้</span>'; ph.style.display='flex'; }
     return;
   }
   _imgReloadDone.add(key);
@@ -3020,18 +3106,21 @@ async function reloadMsgImg(imgEl, msgId){
     const raw = row.message||row.Message||'';
     if(raw.startsWith('⟦img⟧')){
       const newUrl = raw.slice(5);
-      if(newUrl && newUrl !== imgEl.src){
-        imgEl.onerror = ()=>{ imgEl.style.opacity='.3'; }; // one more safety net
+      if(newUrl && newUrl !== imgEl.src && (newUrl.startsWith('http')||newUrl.startsWith('data:'))){
+        imgEl.onerror = ()=>{ imgEl.style.display='none'; if(ph){ ph.innerHTML='<span>🖼</span><span style="font-size:10px">โหลดรูปไม่ได้</span>'; ph.style.display='flex'; } };
+        imgEl.onload = ()=>{ imgEl.style.visibility='visible'; if(ph) ph.style.display='none'; };
         imgEl.src = newUrl;
         return;
       }
     }
     // URL ใน DB ก็เหมือนเดิม → ไม่มีทางโหลดได้
-    imgEl.style.opacity='.3';
+    imgEl.style.display='none';
+    if(ph){ ph.innerHTML='<span>🖼</span><span style="font-size:10px">โหลดรูปไม่ได้</span>'; ph.style.display='flex'; }
   }catch(e){
     if(String(e.message).includes('429')) on429();
     else console.warn('reloadMsgImg:', e);
-    imgEl.style.opacity='.3';
+    imgEl.style.display='none';
+    if(ph){ ph.innerHTML='<span>🖼</span><span style="font-size:10px">โหลดรูปไม่ได้</span>'; ph.style.display='flex'; }
   }
 }
 
