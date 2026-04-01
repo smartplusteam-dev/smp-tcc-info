@@ -313,14 +313,18 @@ a{color:var(--green);text-decoration:none}
 .msg-img-placeholder span{font-size:28px}
 
 /* ── Sticker message ── */
-.msg-sticker{font-size:80px;line-height:1;padding:4px;user-select:none;display:inline-block;cursor:pointer;transition:transform .15s;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3))}
-.msg-sticker:hover{transform:scale(1.12)}
-.msg-sticker:active{transform:scale(0.92)}
-@keyframes stickerPop{0%{transform:scale(0)}60%{transform:scale(1.18)}80%{transform:scale(0.94)}100%{transform:scale(1)}}
-.msg-sticker.new{animation:stickerPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
-/* Sticker bubble — ไม่มีพื้นหลัง เหมือน LINE */
+.msg-sticker-img{width:100px;height:100px;object-fit:contain;cursor:pointer;transition:transform .15s;filter:drop-shadow(0 3px 10px rgba(0,0,0,.35));display:block}
+.msg-sticker-img:hover{transform:scale(1.12)}
+.msg-sticker-img:active{transform:scale(0.92)}
+@keyframes stickerPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.18)}80%{transform:scale(0.94)}100%{transform:scale(1);opacity:1}}
+.msg-sticker-img.new{animation:stickerPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
+/* Sticker bubble — no background, like LINE */
 .msg-bubble.sticker-bubble{background:transparent!important;border:none!important;padding:2px!important;box-shadow:none!important}
 .msg-bubble.sticker-bubble:active{filter:none}
+/* Sticker picker grid — show animated GIFs */
+.sticker-img-btn{width:62px;height:62px;padding:4px;border-radius:12px;cursor:pointer;border:none;background:none;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.sticker-img-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.2)}
+.sticker-img-btn img{width:54px;height:54px;object-fit:contain}
 
 /* ── Meta (time + read) ── */
 .msg-meta{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-d);margin-top:3px;padding:0 2px}
@@ -406,7 +410,82 @@ a{color:var(--green);text-decoration:none}
 /* ================================================
    PROFILE
 ================================================ */
-.profile-av{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--green-d),var(--green));display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:28px;font-weight:700;color:#030E07;margin:0 auto 16px;border:3px solid var(--green-d)}
+/* ================================================
+   PROFILE PAGE — LINE style
+================================================ */
+.profile-page-wrap{padding:0 0 100px}
+/* Cover photo */
+.profile-cover{
+  width:100%;height:180px;position:relative;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,#0a2a1a 0%,#0a1e35 50%,#101025 100%);
+  cursor:pointer;
+}
+.profile-cover img{width:100%;height:100%;object-fit:cover}
+.profile-cover-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(6,13,16,.85) 100%)}
+.profile-cover-edit{
+  position:absolute;top:10px;right:10px;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:5px 11px;font-size:11px;color:#fff;
+  display:flex;align-items:center;gap:5px;backdrop-filter:blur(6px);cursor:pointer;
+}
+/* Avatar wrapper */
+.profile-av-section{
+  display:flex;flex-direction:column;align-items:center;
+  margin-top:-48px;position:relative;z-index:2;padding-bottom:20px;
+}
+.profile-av-wrap{position:relative;display:inline-block;cursor:pointer}
+.profile-av-img{
+  width:96px;height:96px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green-d),var(--green));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-h);font-size:34px;font-weight:700;color:#030E07;
+  border:4px solid var(--bg);box-shadow:0 4px 20px rgba(0,0,0,.5);
+  overflow:hidden;position:relative;
+}
+.profile-av-img img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.profile-av-cam{
+  position:absolute;bottom:2px;right:2px;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green);border:2px solid var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+/* Name & Bio */
+.profile-name-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.profile-display-name{font-family:var(--font-h);font-size:21px;font-weight:700;color:var(--text)}
+.profile-edit-name-btn{background:none;border:none;color:var(--text-s);cursor:pointer;padding:4px;font-size:16px;line-height:1}
+.profile-email{font-size:13px;color:var(--text-s);margin-top:3px}
+.profile-bio-text{
+  font-size:13px;color:var(--text-s);margin-top:10px;
+  max-width:320px;text-align:center;line-height:1.6;
+  background:rgba(255,255,255,.04);border-radius:10px;padding:8px 14px;
+  cursor:pointer;border:1px dashed transparent;transition:border-color .2s;
+}
+.profile-bio-text:hover{border-color:var(--border)}
+.profile-bio-placeholder{color:var(--text-d);font-style:italic}
+.profile-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+/* Stats row */
+.profile-stats{
+  display:flex;gap:0;margin:0 16px 16px;
+  background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;
+}
+.profile-stat{flex:1;text-align:center;padding:14px 8px;border-right:1px solid var(--border)}
+.profile-stat:last-child{border-right:none}
+.profile-stat-val{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--text)}
+.profile-stat-lbl{font-size:10px;color:var(--text-s);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+/* Edit modal */
+.profile-edit-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:5000;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeIn .2s ease;
+}
+.profile-edit-sheet{
+  width:100%;max-width:500px;background:var(--card);
+  border-radius:24px 24px 0 0;padding:24px 20px 40px;
+  animation:slideUp .25s cubic-bezier(.32,.72,0,1);
+  max-height:85vh;overflow-y:auto;
+}
+.profile-edit-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+/* Settings */
 .setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
 .setting-row:last-child{border-bottom:none}
 .setting-lft{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text)}
@@ -1113,36 +1192,109 @@ a{color:var(--green);text-decoration:none}
     </div>
 
     <!-- ──── PROFILE ──── -->
-    <div class="page" id="page-profile">
-      <div class="page-header">
-        <div class="page-title">โปรไฟล์</div>
+    <div class="page" id="page-profile" style="padding:0">
+      <div class="profile-page-wrap">
+
+        <!-- Cover Photo -->
+        <div class="profile-cover" id="pf-cover" onclick="qs('pf-cover-input').click()">
+          <img id="pf-cover-img" src="" alt="" style="display:none">
+          <div class="profile-cover-overlay"></div>
+          <div class="profile-cover-edit">📷 เปลี่ยนปก</div>
+        </div>
+        <input type="file" id="pf-cover-input" accept="image/*" style="display:none" onchange="onCoverChange(event)">
+        <input type="file" id="pf-avatar-input" accept="image/*" style="display:none" onchange="onAvatarChange(event)">
+
+        <!-- Avatar + Name -->
+        <div class="profile-av-section">
+          <div class="profile-av-wrap" onclick="qs('pf-avatar-input').click()">
+            <div class="profile-av-img" id="pf-av-wrap">
+              <span id="pf-av-letter">S</span>
+              <img id="pf-av-img" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
+            </div>
+            <div class="profile-av-cam">📷</div>
+          </div>
+          <div class="profile-name-row">
+            <div class="profile-display-name" id="pf-name">—</div>
+            <button class="profile-edit-name-btn" onclick="openProfileEdit()" title="แก้ไขโปรไฟล์">✏️</button>
+          </div>
+          <div class="profile-email" id="pf-email">—</div>
+          <div class="profile-bio-text" id="pf-bio" onclick="openProfileEdit()">
+            <span class="profile-bio-placeholder" id="pf-bio-ph">แนะนำตัวเองสักหน่อย... 🙂</span>
+          </div>
+          <div class="profile-badges">
+            <span class="chip chip-gold" id="pf-role-chip">Member</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="profile-stats mx-3">
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="pfst-msgs">—</div>
+            <div class="profile-stat-lbl">ข้อความ</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="pfst-pays">—</div>
+            <div class="profile-stat-lbl">การชำระ</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="pfst-days">—</div>
+            <div class="profile-stat-lbl">วันที่สมัคร</div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card mx-3" style="margin-top:0">
+          <div class="setting-row" onclick="openProfileEdit()">
+            <div class="setting-lft"><div class="setting-ico" style="background:rgba(34,197,94,.1)">👤</div>แก้ไขโปรไฟล์</div>
+            <i data-lucide="chevron-right"></i>
+          </div>
+          <div class="setting-row" onclick="openConfig()">
+            <div class="setting-lft"><div class="setting-ico" style="background:rgba(100,200,100,.1)">⚙️</div>ตั้งค่า NocoDB</div>
+            <i data-lucide="chevron-right"></i>
+          </div>
+          <div class="setting-row" onclick="navigate('payment')">
+            <div class="setting-lft"><div class="setting-ico" style="background:rgba(52,211,153,.1)">💳</div>ประวัติชำระเงิน</div>
+            <i data-lucide="chevron-right"></i>
+          </div>
+          <div class="setting-row" onclick="toggleNotif()">
+            <div class="setting-lft"><div class="setting-ico" style="background:rgba(96,165,250,.1)">🔔</div>การแจ้งเตือน</div>
+            <span class="chip chip-gold" id="notif-chip">ปิด</span>
+          </div>
+          <div class="setting-row" onclick="doLogout()">
+            <div class="setting-lft" style="color:var(--error)"><div class="setting-ico" style="background:rgba(248,113,113,.1)">🚪</div>ออกจากระบบ</div>
+            <i data-lucide="chevron-right" style="color:var(--error)"></i>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:24px;font-size:11px;color:var(--text-d);padding-bottom:16px">
+          SmartPlus Web v2.0 — Powered by NocoDB Cloud
+        </div>
       </div>
-      <div class="card mb-3" style="text-align:center;padding:28px">
-        <div class="profile-av" id="pf-av">S</div>
-        <div class="font-h" style="font-size:19px;font-weight:700" id="pf-name">—</div>
-        <div style="font-size:13px;color:var(--text-s);margin-top:3px" id="pf-email">—</div>
-        <div class="chip chip-gold mt-3">Member</div>
-      </div>
-      <div class="card">
-        <div class="setting-row" onclick="openConfig()">
-          <div class="setting-lft"><div class="setting-ico" style="background:rgba(34,197,94,.1)">⚙️</div>ตั้งค่า NocoDB</div>
-          <i data-lucide="chevron-right"></i>
+
+      <!-- Edit Profile Modal (Bottom Sheet) -->
+      <div class="profile-edit-modal" id="pf-edit-modal" style="display:none" onclick="if(event.target===this)closeProfileEdit()">
+        <div class="profile-edit-sheet">
+          <div class="profile-edit-handle"></div>
+          <div style="font-family:var(--font-h);font-size:17px;font-weight:700;margin-bottom:20px">✏️ แก้ไขโปรไฟล์</div>
+
+          <div class="form-group">
+            <label class="form-label">ชื่อที่แสดง</label>
+            <input type="text" id="pf-edit-name" class="form-input" placeholder="ชื่อของคุณ" maxlength="40">
+          </div>
+          <div class="form-group">
+            <label class="form-label">แนะนำตัวเอง (Bio)</label>
+            <textarea id="pf-edit-bio" class="form-input" rows="3" placeholder="บอกให้คนอื่นรู้จักคุณ..." maxlength="150"
+              style="resize:none;height:auto;line-height:1.5"></textarea>
+            <div style="font-size:10px;color:var(--text-d);text-align:right;margin-top:3px"><span id="pf-bio-count">0</span>/150</div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <button class="btn btn-outline" onclick="closeProfileEdit()" style="flex:1">ยกเลิก</button>
+            <button class="btn btn-gold" onclick="saveProfile()" id="pf-save-btn" style="flex:2">
+              <span>💾 บันทึก</span>
+            </button>
+          </div>
         </div>
-        <div class="setting-row" onclick="navigate('payment')">
-          <div class="setting-lft"><div class="setting-ico" style="background:rgba(52,211,153,.1)">💳</div>ประวัติชำระเงิน</div>
-          <i data-lucide="chevron-right"></i>
-        </div>
-        <div class="setting-row" onclick="toggleNotif()">
-          <div class="setting-lft"><div class="setting-ico" style="background:rgba(96,165,250,.1)">🔔</div>การแจ้งเตือน</div>
-          <span class="chip chip-gold" id="notif-chip">ปิด</span>
-        </div>
-        <div class="setting-row" onclick="doLogout()">
-          <div class="setting-lft" style="color:var(--error)"><div class="setting-ico" style="background:rgba(248,113,113,.1)">🚪</div>ออกจากระบบ</div>
-          <i data-lucide="chevron-right" style="color:var(--error)"></i>
-        </div>
-      </div>
-      <div style="text-align:center;margin-top:24px;font-size:11px;color:var(--text-d)">
-        SmartPlus Web v1.0.38 — Powered by NocoDB Cloud
       </div>
     </div>
 
@@ -2038,13 +2190,27 @@ function afterLogin(){
   const email = AUTH.user?.email||'';
   ['wc-name','sb-name','pf-name'].forEach(id=>{ const el=qs(id); if(el) el.textContent=name; });
   ['wc-email','pf-email'].forEach(id=>{ const el=qs(id); if(el) el.textContent=email; });
-  qs('pf-av').textContent = name[0]?.toUpperCase()||'S';
+
+  // Avatar initial letter (fallback)
+  const avLetter = qs('pf-av-letter');
+  if(avLetter) avLetter.textContent = name[0]?.toUpperCase()||'S';
+  // Legacy qs('pf-av') support (sidebar still uses it if any)
+  const pfAv = qs('pf-av');
+  if(pfAv) pfAv.textContent = name[0]?.toUpperCase()||'S';
+
+  // Role badge
+  const roleChip = qs('pf-role-chip');
+  if(roleChip) roleChip.textContent = AUTH.user?.role||'Member';
 
   const h = new Date().getHours();
   qs('dash-greet').textContent = (h<12?'สวัสดีตอนเช้า':h<17?'สวัสดีตอนบ่าย':'สวัสดีตอนเย็น') + ' ' + name;
 
   qs('payment-ref').value = 'SP' + Date.now().toString().slice(-8);
   icons();
+
+  // Load profile extras (avatar, cover, bio) from localStorage cache
+  loadProfileExtras();
+
   loadDashboard();
   startPolling();
 }
@@ -2089,6 +2255,7 @@ function navigate(page){
   if(page==='analytics') loadAnalytics();
   if(page==='submit') loadSubmitPage();
   if(page==='tcc') loadTCC();
+  if(page==='profile') loadProfileExtras();
 
   icons();
 }
@@ -2576,10 +2743,13 @@ function renderMsgRow(m, prevM, myEmail){
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
   } else if(isSticker){
-    // สติ๊กเกอร์ — ไม่มีพื้นหลัง เหมือน LINE
+    // สติ๊กเกอร์ animated GIF — ไม่มีพื้นหลัง เหมือน LINE
     bubbleClass += ' sticker-bubble';
     const safeEmoji = stickerEmoji || '😊';
-    bubbleInner = `<div class="msg-sticker" title="สติ๊กเกอร์" onclick="event.stopPropagation()">${safeEmoji}</div>`;
+    const gifUrl = emojiToNotoUrl(safeEmoji);
+    bubbleInner = `<img class="msg-sticker-img" src="${gifUrl}" alt="${safeEmoji}" title="สติ๊กเกอร์"
+      onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=font-size:72px;filter:drop-shadow(0_3px_8px_rgba(0,0,0,.3))>${safeEmoji}</span>')"
+      onclick="event.stopPropagation()" loading="lazy">`;
   } else if(isImg){
     // รูปภาพ — แสดง placeholder ระหว่างโหลด เพื่อไม่ให้เห็น broken image icon
     const safeUrl = esc(imgUrl);
@@ -2936,39 +3106,48 @@ async function deleteMsg(id){
   }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
-/* ── Emoji picker (with Sticker tab) ── */
+/* ── Animated Sticker System (Google Noto Emoji Animated) ── */
+function emojiToNotoUrl(emoji){
+  // แปลง emoji เป็น codepoints hex แล้วสร้าง URL ของ Noto Animated GIF
+  const cps = [...emoji]
+    .map(c => c.codePointAt(0).toString(16))
+    .filter(cp => cp !== 'fe0f'); // ตัด variation selector
+  return `https://fonts.gstatic.com/s/e/notoemoji/latest/${cps.join('-')}/512.gif`;
+}
+
+// Sticker packs — แต่ละ pack มี emoji + Noto animated GIF
 const STICKER_PACKS = [
   {
-    id:'happy', icon:'😊', name:'Happy & Cute',
-    stickers:['😀','😃','😄','😁','😆','🤣','😂','😊','😇','🥰','😍','🤩','😘','🥳','😎','🤗','😜','😝','😛','🤪','😺','😸','😹','😻','😼','🙀','😽','🎉','✨','🌟']
+    id:'happy', icon:'😄', name:'ยิ้มแย้ม',
+    stickers:['😀','😂','🤣','😊','😍','🤩','😎','🥳','😜','🤗','😇','🥰','😘','😋','🤪','😁']
   },
   {
-    id:'love', icon:'❤️', name:'Love',
-    stickers:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💓','💗','💖','💘','💝','😍','🥰','😘','😗','💋','💌','🌹','💐','🌸','🦋','🌈','✨','💫','🫶','🤝']
+    id:'love', icon:'❤️', name:'ความรัก',
+    stickers:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💖','💘','💝','🫶','🥺','😳']
   },
   {
-    id:'crying', icon:'😢', name:'Sad & Crying',
-    stickers:['😢','😭','😿','😞','😔','😟','😕','🙁','☹️','😣','😖','😩','😫','🥺','😤','😠','😡','🤬','💢','😤','😒','😑','😶','😐','🫥','😪','🥱','😴','💤','🌧️']
+    id:'sad', icon:'😢', name:'อารมณ์',
+    stickers:['😢','😭','😱','😤','😠','🤬','😩','😫','😔','😒','🙄','😶','🫠','🥱','😴','🤯']
   },
   {
-    id:'greet', icon:'👋', name:'Greetings',
-    stickers:['👋','🤚','✋','🖖','🫱','🤝','🙏','👐','🫶','💪','🦾','👍','👎','👌','🤌','🤏','✌️','🤞','🤟','🤘','☝️','👆','👇','👈','👉','🫵','🫲','🙌','👏','🤲']
+    id:'greet', icon:'👋', name:'ทักทาย',
+    stickers:['👋','🙏','👍','👎','👌','💪','🤝','🫶','👏','✌️','🤞','☝️','🫡','🤙','👐','🙌']
   },
   {
-    id:'fun', icon:'🎮', name:'Fun & Games',
-    stickers:['🎮','🕹️','🎲','🎯','🎳','🏆','🥇','🎖️','🏅','🎪','🎨','🎭','🎬','🎤','🎧','🎵','🎶','🎸','🎹','🎺','🥁','🎻','🎠','🎡','🎢','🎪','🎟️','🃏','🀄','🎴']
+    id:'celebrate', icon:'🎉', name:'ฉลอง',
+    stickers:['🎉','🎊','🏆','🥇','🎯','🔥','✨','💫','🌟','⭐','🎁','🎈','🎂','🥂','🍾','🎶']
   },
   {
-    id:'food', icon:'🍔', name:'Food & Drink',
-    stickers:['🍔','🍕','🌮','🌯','🥗','🍜','🍣','🍱','🍩','🎂','🍰','🧁','🍦','🍧','🍨','🍫','🍬','🍭','🧃','🥤','☕','🍵','🧋','🍺','🥂','🍾','🎁','🛍️','🥡','🍿']
+    id:'animals', icon:'🐶', name:'สัตว์น่ารัก',
+    stickers:['🐶','🐱','🐸','🐼','🐨','🦊','🐰','🦁','🐯','🐺','🦋','🐝','🦄','🐲','🦕','🐙']
   },
   {
-    id:'animals', icon:'🐶', name:'Animals',
-    stickers:['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐸','🐙','🦋','🐝','🐞','🦄','🐲','🦕','🦖','🦀','🦞','🦈','🐬','🦭','🐋','🦒','🐘','🦛','🦏']
+    id:'food', icon:'🍔', name:'อาหาร',
+    stickers:['🍔','🍕','🌮','🍜','🍣','🍩','🎂','🧁','🍦','🍫','☕','🧋','🍺','🥂','🍾','🍿']
   },
   {
-    id:'money', icon:'💰', name:'Money & Work',
-    stickers:['💰','💵','💴','💶','💷','💸','💳','💎','🏦','📈','📉','💹','🤑','💲','🪙','💼','📊','🗂️','📋','📌','📍','🖊️','✏️','📝','🖥️','💻','📱','⌨️','🖱️','🖨️']
+    id:'money', icon:'💰', name:'การเงิน',
+    stickers:['💰','💵','💎','📈','🤑','💹','🏦','💳','🪙','💸','🎰','📊','💼','🔑','🏆','🚀']
   }
 ];
 
@@ -2988,8 +3167,14 @@ function buildStickerTab(){
       <span class="sticker-pack-icon">${pack.icon}</span>
       <span class="sticker-pack-name">${pack.name}</span>
     </div>
-    <div class="sticker-grid">
-      ${pack.stickers.map(s=>`<button class="sticker-btn" onclick="sendSticker('${s}')" title="${s}">${s}</button>`).join('')}
+    <div class="sticker-grid" style="grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px">
+      ${pack.stickers.map(s=>{
+        const url = emojiToNotoUrl(s);
+        return `<button class="sticker-img-btn" onclick="sendSticker('${s}')" title="${s}">
+          <img src="${url}" alt="${s}" loading="lazy"
+            onerror="this.style.display='none';this.parentNode.innerHTML='<span style=font-size:30px>${s}</span>'">
+        </button>`;
+      }).join('')}
     </div>`).join('');
 }
 
@@ -3034,11 +3219,13 @@ async function sendSticker(emoji){
   const tempRow = document.createElement('div');
   tempRow.id = 'msg-'+tempId;
   tempRow.className = 'msg-row own';
+  const gifUrl = emojiToNotoUrl(emoji);
   tempRow.innerHTML = `
     <div class="msg-av" style="visibility:hidden">S</div>
     <div class="msg-body" style="align-items:flex-end">
       <div class="msg-bubble sticker-bubble">
-        <div class="msg-sticker new">${emoji}</div>
+        <img class="msg-sticker-img new" src="${gifUrl}" alt="${emoji}"
+          onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=font-size:72px>${emoji}</span>')">
       </div>
       <div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span><span class="msg-tick" style="opacity:.5">✓</span></div>
     </div>`;
@@ -3306,6 +3493,217 @@ function onTccLoad(){} // stub ไว้ป้องกัน error จาก re
 function onTccError(){
   qs('tcc-loading').style.display = 'none';
   qs('tcc-blocked').style.display  = 'flex';
+}
+
+/* ================================================
+   PROFILE MANAGEMENT
+================================================ */
+
+/* ── Load extras (avatar / cover / bio) from localStorage ── */
+function loadProfileExtras(){
+  const email = AUTH.user?.email||'';
+  if(!email) return;
+  const key = 'sp_pf_'+btoa(email).replace(/=/g,'');
+  let pf = {};
+  try{ pf = JSON.parse(localStorage.getItem(key)||'{}'); }catch{}
+
+  // Avatar
+  const avImg = qs('pf-av-img');
+  const avLetter = qs('pf-av-letter');
+  if(pf.avatar && avImg){
+    avImg.src = pf.avatar;
+    avImg.style.display = 'block';
+    if(avLetter) avLetter.style.display = 'none';
+  }
+
+  // Cover photo
+  const cover = qs('pf-cover');
+  const coverImg = qs('pf-cover-img');
+  if(pf.cover && coverImg){
+    coverImg.src = pf.cover;
+    coverImg.style.display = 'block';
+  }
+
+  // Bio
+  const bioPh = qs('pf-bio-ph');
+  const bioEl = qs('pf-bio');
+  const bio = pf.bio || AUTH.user?.bio || '';
+  if(bio && bioEl){
+    if(bioPh) bioPh.style.display = 'none';
+    bioEl.innerHTML = `<span style="color:var(--text-s)">${esc(bio)}</span>`;
+  }
+
+  // Display name (might have been updated)
+  if(pf.display_name){
+    AUTH.user.display_name = pf.display_name;
+    ['wc-name','sb-name','pf-name'].forEach(id=>{ const el=qs(id); if(el) el.textContent=pf.display_name; });
+    const avL = qs('pf-av-letter');
+    if(avL) avL.textContent = pf.display_name[0]?.toUpperCase()||'S';
+  }
+
+  // Stats
+  loadProfileStats();
+}
+
+/* ── Load profile stats from NocoDB ── */
+async function loadProfileStats(){
+  if(!AUTH.user?.email) return;
+  try{
+    if(CFG.tbl.chat){
+      const c = await API.count(CFG.tbl.chat).catch(()=>({count:0}));
+      const el = qs('pfst-msgs'); if(el) el.textContent = c.count||0;
+    }
+    if(CFG.tbl.pay){
+      const p = await API.list(CFG.tbl.pay,{limit:200}).catch(()=>({list:[]}));
+      const el = qs('pfst-pays'); if(el) el.textContent = (p.list||[]).length;
+    }
+    // Days since join
+    const joined = AUTH.user?.joined_at||AUTH.user?.last_login||'';
+    const daysEl = qs('pfst-days');
+    if(daysEl && joined){
+      const days = Math.floor((Date.now()-new Date(joined))/(1000*60*60*24));
+      daysEl.textContent = days>0 ? days+'d' : '1d';
+    } else if(daysEl){ daysEl.textContent = '—'; }
+  }catch{}
+}
+
+/* ── Open/close edit modal ── */
+function openProfileEdit(){
+  const email = AUTH.user?.email||'';
+  const key = 'sp_pf_'+btoa(email).replace(/=/g,'');
+  let pf = {};
+  try{ pf = JSON.parse(localStorage.getItem(key)||'{}'); }catch{}
+
+  const nameEl = qs('pf-edit-name');
+  const bioEl  = qs('pf-edit-bio');
+  const cntEl  = qs('pf-bio-count');
+
+  if(nameEl) nameEl.value = pf.display_name || AUTH.user?.display_name || AUTH.user?.name || '';
+  if(bioEl){
+    bioEl.value = pf.bio || AUTH.user?.bio || '';
+    if(cntEl) cntEl.textContent = bioEl.value.length;
+    bioEl.addEventListener('input',()=>{ if(cntEl) cntEl.textContent = bioEl.value.length; },{once:false});
+  }
+
+  const modal = qs('pf-edit-modal');
+  if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>{ modal.style.opacity='1'; }); }
+  if(nameEl) setTimeout(()=>nameEl.focus(),200);
+}
+
+function closeProfileEdit(){
+  const modal = qs('pf-edit-modal');
+  if(modal) modal.style.display='none';
+}
+
+/* ── Save profile ── */
+async function saveProfile(){
+  const nameVal = (qs('pf-edit-name')?.value||'').trim();
+  const bioVal  = (qs('pf-edit-bio')?.value||'').trim().slice(0,150);
+  if(!nameVal) return toast('กรุณากรอกชื่อที่แสดง','error');
+
+  setBtnLoad('pf-save-btn',true);
+  try{
+    const email = AUTH.user?.email||'';
+    const key   = 'sp_pf_'+btoa(email).replace(/=/g,'');
+    let pf = {};
+    try{ pf = JSON.parse(localStorage.getItem(key)||'{}'); }catch{}
+
+    pf.display_name = nameVal;
+    pf.bio = bioVal;
+    localStorage.setItem(key, JSON.stringify(pf));
+
+    // อัปเดต AUTH ใน memory
+    AUTH.user.display_name = nameVal;
+    AUTH.user.bio = bioVal;
+    localStorage.setItem('sp_usr', JSON.stringify(AUTH.user));
+
+    // อัปเดต NocoDB ถ้ามี memberId
+    if(AUTH.user?.memberId && CFG.tbl.members){
+      await API.updateMember(AUTH.user.memberId,{
+        display_name: nameVal,
+        bio: bioVal
+      }).catch(()=>{});
+    }
+
+    // อัปเดต UI
+    ['wc-name','sb-name','pf-name'].forEach(id=>{ const el=qs(id); if(el) el.textContent=nameVal; });
+    const avL = qs('pf-av-letter'); if(avL) avL.textContent = nameVal[0]?.toUpperCase()||'S';
+
+    const bioPh = qs('pf-bio-ph');
+    const bioDisp = qs('pf-bio');
+    if(bioVal && bioDisp){
+      if(bioPh) bioPh.style.display='none';
+      bioDisp.innerHTML = `<span style="color:var(--text-s)">${esc(bioVal)}</span>`;
+    } else if(bioDisp){
+      bioDisp.innerHTML = `<span class="profile-bio-placeholder" id="pf-bio-ph">แนะนำตัวเองสักหน่อย... 🙂</span>`;
+    }
+
+    closeProfileEdit();
+    toast('บันทึกโปรไฟล์สำเร็จ ✅','success');
+  }catch(e){
+    toast('บันทึกไม่สำเร็จ: '+e.message,'error');
+  } finally {
+    setBtnLoad('pf-save-btn',false,'💾 บันทึก');
+  }
+}
+
+/* ── Avatar change ── */
+async function onAvatarChange(event){
+  const file = event.target.files[0];
+  event.target.value='';
+  if(!file) return;
+  try{
+    toast('กำลังบีบอัดรูป...','info');
+    // บีบให้เล็กลง — avatar แค่ 180x180 พอ
+    const b64 = await compressImg(file, 180, 0.80);
+    if(b64.length > 80000){ toast('รูปใหญ่เกินไป กรุณาใช้รูปขนาดเล็กกว่า','warn'); return; }
+
+    const email = AUTH.user?.email||'';
+    const key   = 'sp_pf_'+btoa(email).replace(/=/g,'');
+    let pf = {};
+    try{ pf = JSON.parse(localStorage.getItem(key)||'{}'); }catch{}
+    pf.avatar = b64;
+    localStorage.setItem(key, JSON.stringify(pf));
+
+    // แสดงรูปใหม่
+    const avImg = qs('pf-av-img');
+    const avL   = qs('pf-av-letter');
+    if(avImg){ avImg.src=b64; avImg.style.display='block'; }
+    if(avL) avL.style.display='none';
+
+    // Sync to NocoDB (optional — ถ้า field มีอยู่)
+    if(AUTH.user?.memberId && CFG.tbl.members){
+      await API.updateMember(AUTH.user.memberId,{avatar:b64}).catch(()=>{});
+    }
+    toast('เปลี่ยนรูปโปรไฟล์สำเร็จ ✅','success');
+  }catch(e){ toast('เปลี่ยนรูปไม่สำเร็จ: '+e.message,'error'); }
+}
+
+/* ── Cover photo change ── */
+async function onCoverChange(event){
+  const file = event.target.files[0];
+  event.target.value='';
+  if(!file) return;
+  try{
+    toast('กำลังบีบอัดรูปปก...','info');
+    const b64 = await compressImg(file, 800, 0.75);
+    if(b64.length > 150000){ toast('รูปใหญ่เกินไป กรุณาใช้รูปขนาดเล็กกว่า','warn'); return; }
+
+    const email = AUTH.user?.email||'';
+    const key   = 'sp_pf_'+btoa(email).replace(/=/g,'');
+    let pf = {};
+    try{ pf = JSON.parse(localStorage.getItem(key)||'{}'); }catch{}
+    pf.cover = b64;
+    localStorage.setItem(key, JSON.stringify(pf));
+
+    const coverImg = qs('pf-cover-img');
+    if(coverImg){ coverImg.src=b64; coverImg.style.display='block'; }
+
+    if(AUTH.user?.memberId && CFG.tbl.members){
+      await API.updateMember(AUTH.user.memberId,{cover_photo:b64}).catch(()=>{});
+    }
+    toast('เปลี่ยนรูปปกสำเร็จ ✅','success');
+  }catch(e){ toast('เปลี่ยนรูปปกไม่สำเร็จ: '+e.message,'error'); }
 }
 
 /* ================================================
