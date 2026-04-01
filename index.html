@@ -3053,6 +3053,14 @@ async function checkChatBadge(){
     }
   }catch(e){ if(String(e.message).includes('429')) on429(); }
 }
+
+/* ================================================
+   ANALYTICS
+================================================ */
+let payChartObj = null;
+let actChartObj = null;
+
+async function loadAnalytics(){
   // Payment by month
   let monthData=Array(12).fill(0);
   if(CFG.tbl.pay){
