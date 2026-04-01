@@ -351,9 +351,19 @@ a{color:var(--green);text-decoration:none}
 .reply-cancel:hover{color:var(--text)}
 
 /* ── Emoji picker ── */
-.emoji-picker{background:var(--card);border-top:1px solid var(--border);padding:10px 12px;display:grid;grid-template-columns:repeat(9,1fr);gap:1px;flex-shrink:0;max-height:196px;overflow-y:auto;animation:slideUp .15s ease}
+.emoji-picker{background:var(--card);border-top:1px solid var(--border);padding:0;display:flex;flex-direction:column;flex-shrink:0;max-height:220px;overflow:hidden;animation:slideUp .15s ease}
+.emoji-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.emoji-tab{flex:1;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text-s);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.emoji-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.emoji-content{overflow-y:auto;padding:8px 10px;flex:1}
+.emoji-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:1px}
 .emoji-btn{font-size:22px;padding:5px;border-radius:8px;cursor:pointer;border:none;background:none;transition:background .1s;line-height:1}
 .emoji-btn:hover{background:rgba(255,255,255,.09)}
+.sticker-section{margin-bottom:10px}
+.sticker-section-title{font-size:9px;font-weight:700;color:var(--text-s);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;padding-left:2px}
+.sticker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.sticker-btn{font-size:26px;padding:6px;border-radius:10px;cursor:pointer;border:none;background:none;transition:all .15s;line-height:1;text-align:center}
+.sticker-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.2)}
 
 /* ── Input area ── */
 .chat-input-area{display:flex;align-items:flex-end;gap:7px;padding:9px 11px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(9px,env(safe-area-inset-bottom))}
@@ -745,8 +755,10 @@ a{color:var(--green);text-decoration:none}
     <!-- Login -->
     <div id="login-form">
       <div class="form-group">
-        <label class="form-label">อีเมล</label>
-        <input type="email" id="l-email" class="form-input" placeholder="email@example.com" autocomplete="email">
+        <label class="form-label">อีเมล หรือ ชื่อผู้ใช้</label>
+        <input type="text" id="l-email" class="form-input" placeholder="email@example.com หรือ ชื่อของคุณ"
+          autocomplete="username" autocapitalize="off" spellcheck="false"
+          onkeyup="if(event.key==='Enter')doLogin()">
       </div>
       <div class="form-group">
         <label class="form-label">รหัสผ่าน</label>
@@ -756,6 +768,7 @@ a{color:var(--green);text-decoration:none}
       <button class="btn btn-gold mt-4" id="login-btn" onclick="doLogin()">
         <span>เข้าสู่ระบบ</span>
       </button>
+      <div id="login-hint" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;font-size:12px;color:var(--blue-l);line-height:1.6"></div>
     </div>
 
     <!-- Register -->
@@ -1027,8 +1040,14 @@ a{color:var(--green);text-decoration:none}
         <button class="reply-cancel" onclick="cancelReply()">✕</button>
       </div>
 
-      <!-- Emoji picker -->
-      <div id="emoji-picker" class="emoji-picker" style="display:none"></div>
+      <!-- Emoji/Sticker picker -->
+      <div id="emoji-picker" class="emoji-picker" style="display:none">
+        <div class="emoji-tabs">
+          <div class="emoji-tab active" id="etab-emoji" onclick="switchEmojiTab('emoji')">😊 อีโมจิ</div>
+          <div class="emoji-tab" id="etab-sticker" onclick="switchEmojiTab('sticker')">🎭 สติ๊กเกอร์</div>
+        </div>
+        <div class="emoji-content" id="emoji-content-area"></div>
+      </div>
 
       <!-- Input area -->
       <div class="chat-input-area">
@@ -1739,6 +1758,15 @@ const API = {
     const q=new URLSearchParams({where:`(email,eq,${email})`,limit:1}).toString();
     return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
   },
+  findMemberByName(name){
+    const q=new URLSearchParams({where:`(name,eq,${name})`,limit:1}).toString();
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
+  },
+  // ค้นหาทั้ง email และ name พร้อมกัน (OR filter)
+  findMemberByEmailOrName(val){
+    const q=new URLSearchParams({where:`(email,eq,${val})~or(name,eq,${val})`,limit:5}).toString();
+    return this.req('GET',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}?${q}`);
+  },
   createMember(data){return this.req('POST',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}`,data);},
   updateMember(id,data){return this.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.members}/${id}`,data);},
   /* Submissions */
@@ -1806,19 +1834,57 @@ AUTH.clear=function(){
 };
 
 async function doLogin(){
-  const email=qs('l-email').value.trim().toLowerCase();
-  const pass=qs('l-pass').value;
-  if(!email||!pass) return toast('กรุณากรอกอีเมลและรหัสผ่าน','error');
+  const rawInput = qs('l-email').value.trim();
+  const pass = qs('l-pass').value;
+  const hint = qs('login-hint');
+  if(hint) hint.style.display='none';
+
+  if(!rawInput||!pass) return toast('กรุณากรอกข้อมูลให้ครบ','error');
   setBtnLoad('login-btn',true);
   try{
-    const hashed=await hashPass(pass);
-    const res=await API.findMemberByEmail(email);
-    const member=res?.list?.[0];
-    if(!member) throw new Error('ไม่พบบัญชีนี้ในระบบ');
-    if(member.status==='suspended') throw new Error('บัญชีถูกระงับ');
-    if(member.password_hash!==hashed) throw new Error('รหัสผ่านไม่ถูกต้อง');
+    const hashed = await hashPass(pass);
+    let member = null;
+
+    // ตรวจว่าเป็น email หรือ username
+    const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawInput);
+
+    if(isEmail){
+      // ค้นหา by email
+      const res = await API.findMemberByEmail(rawInput.toLowerCase()).catch(e=>{ throw new Error('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message); });
+      member = res?.list?.[0];
+    } else {
+      // ค้นหา by name (username) ก่อน
+      const res = await API.findMemberByName(rawInput).catch(e=>{ throw new Error('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message); });
+      member = res?.list?.[0];
+      // ถ้าไม่เจอ ลอง email ด้วย (กรณีพิมพ์ไม่มี @)
+      if(!member){
+        const res2 = await API.findMemberByEmail(rawInput.toLowerCase()).catch(()=>null);
+        member = res2?.list?.[0];
+      }
+    }
+
+    if(!member){
+      if(hint){
+        hint.style.display='block';
+        hint.innerHTML=`ℹ️ ไม่พบบัญชี <b>${esc(rawInput)}</b> ในระบบ<br>กรุณา <b>สมัครสมาชิก</b> ก่อน หรือตรวจสอบ<br>• ชื่อ/อีเมล ตรงกับที่ลงทะเบียนไว้<br>• ตัวพิมพ์เล็ก/ใหญ่ (case-sensitive)`;
+      }
+      throw new Error('ไม่พบบัญชีนี้ในระบบ');
+    }
+    if(member.status==='suspended') throw new Error('บัญชีถูกระงับ — กรุณาติดต่อ Admin');
+    if(member.password_hash!==hashed){
+      if(hint){
+        hint.style.display='block';
+        hint.innerHTML=`ℹ️ รหัสผ่านไม่ถูกต้อง<br>หากลืมรหัสผ่าน กรุณาติดต่อ Admin`;
+      }
+      throw new Error('รหัสผ่านไม่ถูกต้อง');
+    }
     await API.updateMember(member.Id||member.id,{last_login:new Date().toISOString()}).catch(()=>{});
-    AUTH.save({email:member.email,name:member.name||email.split('@')[0],phone:member.phone||'',role:member.role||'member',memberId:member.Id||member.id||''});
+    AUTH.save({
+      email:member.email, name:member.name||rawInput,
+      phone:member.phone||'', role:member.role||'member',
+      memberId:member.Id||member.id||''
+    });
+    if(hint) hint.style.display='none';
     afterLogin();
   }catch(e){toast('เข้าสู่ระบบไม่สำเร็จ: '+e.message,'error');}
   finally{setBtnLoad('login-btn',false,'เข้าสู่ระบบ');}
@@ -2313,6 +2379,10 @@ function parseMsg(raw){
   let text = raw;
 
   if(raw.startsWith('⟦del⟧')){ isDeleted=true; text=''; }
+  else if(raw.startsWith('⟦sticker⟧')){ 
+    // sticker ใช้ isImg=true แต่เก็บ emoji ใน imgUrl เพื่อ reuse renderer
+    isImg=true; imgUrl='__sticker__'+raw.slice(10); text=''; 
+  }
   else if(raw.startsWith('⟦img⟧')){ isImg=true; imgUrl=raw.slice(5); text=''; }
   else if(raw.startsWith('⟦reply:')){
     const end = raw.indexOf('⟧');
@@ -2382,8 +2452,11 @@ function renderMsgRow(m, prevM, myEmail){
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
   } else if(isImg){
-    // ถ้า ID นี้เคย reload ล้มเหลวแล้ว → แสดง placeholder ตรงๆ ไม่ทำ HTTP call อีก
-    if(_imgReloadDone.has(String(id))){
+    // ตรวจว่าเป็น sticker หรือรูปจริง
+    if(imgUrl.startsWith('__sticker__')){
+      const stickerEmoji = imgUrl.slice(11);
+      bubbleInner = `<div style="font-size:52px;line-height:1;padding:4px 6px;user-select:none" title="สติ๊กเกอร์">${esc(stickerEmoji)}</div>`;
+    } else if(_imgReloadDone.has(String(id))){
       bubbleInner = `<div style="width:120px;height:70px;background:var(--surface);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-d);font-size:12px;border:1px solid var(--border)">🖼 โหลดไม่ได้</div>`;
     } else {
       bubbleInner = `<img class="msg-img" src="${esc(imgUrl)}"
@@ -2731,18 +2804,50 @@ async function deleteMsg(id){
   }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
-/* ── Emoji picker ── */
-function buildEmojiPicker(){
-  const el = qs('emoji-picker');
-  if(el.innerHTML) return;
-  el.innerHTML = EMOJIS.map(e=>
-    `<button class="emoji-btn" onclick="insertEmoji('${e}')">${e}</button>`
-  ).join('');
+/* ── Emoji picker (with Sticker tab) ── */
+const STICKER_SETS = {
+  '😊 ยิ้ม & ตลก': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😗','☺️','😙','😚','🥲','🤗','🤔','🫡','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥'],
+  '❤️ ความรู้สึก': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✨','💫','⭐','🌟','🔥','💯','🎉','🎊','🎈'],
+  '👍 ท่าทาง': ['👍','👎','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👋','🤚','🖐','✋','🖖','🫶','🤝','🙏','👏','🫙','✍️','💪','🦾','🤲'],
+  '🚀 กิจกรรม': ['🚀','💎','💰','📈','📉','💹','🏆','🥇','🎯','🎮','⚽','🏀','🎵','🎶','🎤','🎸','🎹','🎺','🎻','🥁','🎬','🎭','🎨','🖌️','✏️','📝','📚','📖','🔍','🔎'],
+  '🌍 สถานที่ & อื่นๆ': ['🌍','🌏','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🗼','🗽','🗾','⛩️','🗿','🌋','🏔️','⛰️','🏕️','🏖️','🏗️','🏘️','🌃','🌆','🌇','🌉']
+};
+
+let curEmojiTab = 'emoji';
+
+function buildEmojiTab(){
+  const area = qs('emoji-content-area');
+  if(!area) return;
+  area.innerHTML = `<div class="emoji-grid">${EMOJIS.map(e=>`<button class="emoji-btn" onclick="insertEmoji('${e}')">${e}</button>`).join('')}</div>`;
 }
+
+function buildStickerTab(){
+  const area = qs('emoji-content-area');
+  if(!area) return;
+  area.innerHTML = Object.entries(STICKER_SETS).map(([title, stickers])=>`
+    <div class="sticker-section">
+      <div class="sticker-section-title">${title}</div>
+      <div class="sticker-grid">${stickers.map(s=>`<button class="sticker-btn" onclick="sendSticker('${s}')" title="ส่งสติ๊กเกอร์">${s}</button>`).join('')}</div>
+    </div>`).join('');
+}
+
+function switchEmojiTab(tab){
+  curEmojiTab = tab;
+  qs('etab-emoji')?.classList.toggle('active', tab==='emoji');
+  qs('etab-sticker')?.classList.toggle('active', tab==='sticker');
+  if(tab==='emoji') buildEmojiTab();
+  else buildStickerTab();
+}
+
+function buildEmojiPicker(){
+  if(!qs('emoji-content-area')) return;
+  switchEmojiTab(curEmojiTab);
+}
+
 function toggleEmoji(){
   emojiOpen = !emojiOpen;
   const el = qs('emoji-picker');
-  el.style.display = emojiOpen ? 'grid' : 'none';
+  el.style.display = emojiOpen ? 'flex' : 'none';
   if(emojiOpen){ buildEmojiPicker(); qs('chat-in').focus(); }
 }
 function closeEmoji(){ emojiOpen=false; const el=qs('emoji-picker'); if(el) el.style.display='none'; }
@@ -2752,6 +2857,24 @@ function insertEmoji(e){
   inp.value = inp.value.slice(0,pos)+e+inp.value.slice(pos);
   inp.focus();
   autoResizeTa(inp);
+}
+
+/* ── Send sticker as special message ── */
+async function sendSticker(emoji){
+  if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
+  closeEmoji();
+  const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
+  // ส่งเป็น ⟦sticker⟧emoji format
+  const text = `⟦sticker⟧${emoji}`;
+  try{
+    await API.create(CFG.tbl.chat,{
+      message:text,
+      user_email:AUTH.user?.email||'anonymous',
+      user_name:myName,
+      created_at:new Date().toISOString()
+    });
+    await loadChat(); scrollBottom();
+  }catch(e){ toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
 }
 
 /* ── Textarea auto-resize ── */
