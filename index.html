@@ -2299,8 +2299,8 @@ function afterLogin(){
   loadDashboard();
   startPolling();
   // ✅ Chat v2: delay room list load to avoid burst 429
-  setTimeout(()=>loadRoomList(), 2000);
-  setTimeout(()=>checkFriendInviteURL(), 3000);
+  setTimeout(()=>loadRoomList(), 3500); // delay ป้องกัน burst 429
+  setTimeout(()=>checkFriendInviteURL(), 5000);
 }
 
 /* ================================================
@@ -2328,7 +2328,7 @@ function navigate(page){
   const _ca = document.querySelector('.content-area');
   if(_ca) _ca.style.overflowY = (page==='chat'||page==='friends') ? 'hidden' : 'auto';
 
-  if(page==='chat'){ qs('chat-badge').style.display='none'; loadChatV2(); scrollBottom(); }
+  if(page==='chat'){ qs('chat-badge').style.display='none'; if(curPage!=='chat') lastMsgCnt=0; loadChatV2(); scrollBottom(); }
   if(page==='friends'){ loadFriendsList(); }
   if(page==='ebooks') loadEbooks();
   if(page==='payment') loadPayHist();
@@ -3460,7 +3460,7 @@ const ChatAPI = {
 /* ─── Load room list into sidebar ─── */
 let _roomListLoading = false;
 let _roomListLastLoad = 0;
-const ROOM_LIST_MIN_INTERVAL = 30000; // โหลดใหม่ได้ทุก 30s เท่านั้น
+const ROOM_LIST_MIN_INTERVAL = 60000; // โหลดใหม่ได้ทุก 60s เท่านั้น
 
 async function loadRoomList(force=false){
   if(!CFG.tbl.chat_rooms) return;
@@ -3517,24 +3517,35 @@ async function switchRoom(roomId, roomName, roomType){
   currentRoomId   = roomId;
   currentRoomName = roomName;
   currentRoomType = roomType||'group';
+  lastMsgCnt = 0; // ✅ reset counter เมื่อเปลี่ยนห้อง
 
   // Update header
   const hdrName = qs('chat-hdr-name');
-  const hdrSub  = qs('chat-status');
   const hdrAv   = qs('chat-hdr-av-letter');
+  const hdrSub  = qs('chat-status');
   if(hdrName) hdrName.textContent = roomName;
   if(hdrAv)   hdrAv.textContent   = roomName[0]?.toUpperCase()||'S';
+  if(hdrSub)  hdrSub.textContent  = roomType==='private' ? '💬 ห้องส่วนตัว' : roomId ? '👥 กลุ่ม' : 'ห้องสนทนากลุ่ม';
+
+  // Show loading
+  const el = qs('chat-msgs');
+  if(el) el.innerHTML = '<div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>';
 
   renderRoomList();
   closeSidebar();
-  await loadChatV2();
+  await loadChatV2(true);
 }
 
 /* ─── Load messages for current room ─── */
 async function loadChatV2(force=false){
-  // If no rooms table configured, fall back to legacy chat
-  if(!CFG.tbl.messages || !currentRoomId){
-    return loadChat(force);
+  // Route: currentRoomId set → v2 messages table; null → legacy chat table
+  if(!currentRoomId){
+    return loadChat(force); // SmartPlus Group legacy
+  }
+  if(!CFG.tbl.messages){
+    const el=qs('chat-msgs');
+    if(el) el.innerHTML='<div class="empty"><span class="ei">⚙️</span><h3>ยังไม่ได้ตั้งค่า</h3><p>กรุณาตั้งค่า Table ID ของ Messages</p></div>';
+    return;
   }
 
   const el = qs('chat-msgs');
