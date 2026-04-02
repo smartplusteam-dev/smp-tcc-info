@@ -1099,9 +1099,9 @@ async function adminViewRoomMembers(roomId, roomName){
     if(!members.length){ rmList.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-s)">ยังไม่มีสมาชิก</div>'; return; }
     rmList.innerHTML = members.map(m=>`
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="width:36px;height:36px;border-radius:50%;background:hsl(${strHue(m.user_email||'')},50%,35%);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">${(m.user_email||'?')[0].toUpperCase()}</div>
-        <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(m.user_name||m.user_email||'')}</div><div style="font-size:11px;color:var(--text-s)">${esc(m.user_email||'')} · ${m.role||'member'}</div></div>
-        <button class="btn btn-danger btn-sm" onclick="adminRemoveRoomMember('${m.Id||m.id}','${esc(m.user_name||m.user_email||'')}')">ลบ</button>
+        <div style="width:36px;height:36px;border-radius:50%;background:hsl(${strHue(m.member_email||'')},50%,35%);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">${(m.user_email||'?')[0].toUpperCase()}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(m.member_name||m.member_email||'')}</div><div style="font-size:11px;color:var(--text-s)">${esc(m.member_email||'')} · ${m.role||'member'}</div></div>
+        <button class="btn btn-danger btn-sm" onclick="adminRemoveRoomMember('${m.Id||m.id}','${esc(m.member_name||m.member_email||'')}')">ลบ</button>
       </div>`).join('');
     icons();
   }catch(e){ const el=qs('rm-list'); if(el) el.innerHTML=`<div style="color:var(--error);padding:10px">${e.message}</div>`; }
@@ -1165,9 +1165,9 @@ async function adminDoAddMember(roomId, email, name, btn){
   btn.disabled=true; btn.textContent='⏳';
   try{
     // Check if already member
-    const ex = await API.list(ADMIN.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(user_email,eq,${email})`});
+    const ex = await API.list(ADMIN.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(member_email,eq,${email})`});
     if((ex.list||[]).length){ toast(`${email} อยู่ในห้องนี้แล้ว`,'info'); btn.textContent='อยู่แล้ว'; return; }
-    await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), user_email:email, user_name:name, role:'member', joined_at:new Date().toISOString() });
+    await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), member_email:email, member_name:name, role:'member', joined_at:new Date().toISOString() });
     btn.textContent='✅'; toast(`เพิ่ม ${name} เข้าห้องแล้ว`,'success');
   }catch(e){ toast('เพิ่มไม่สำเร็จ: '+e.message,'error'); btn.disabled=false; btn.textContent='เพิ่ม'; }
 }
@@ -1268,7 +1268,7 @@ async function adminDoCreateRoom(){
     if(roomId && ADMIN.tbl.room_members){
       const members = window._selectedRoomMembers||[];
       for(const m of members){
-        await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), user_email:m.email, user_name:m.name, role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
+        await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), member_email:m.email, member_name:m.name, role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
       }
     }
 
