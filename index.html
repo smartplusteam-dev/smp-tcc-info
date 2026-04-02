@@ -3083,35 +3083,46 @@ async function sendMsg(){
 /* ── Send image ── */
 async function sendImage(event){
   const file = event.target.files[0];
-  event.target.value = ''; // reset ก่อนทุกกรณี ป้องกัน stuck
+  event.target.value = '';
   if(!file) return;
   if(!file.type.startsWith('image/')) return toast('รองรับเฉพาะไฟล์รูปภาพ (JPG, PNG, GIF, WebP)','warn');
   if(file.size > 10*1024*1024) return toast('ไฟล์ใหญ่เกิน 10MB — กรุณาใช้รูปที่เล็กกว่า','warn');
-  if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
+
+  // ✅ FIX: Route ถูก table ตาม currentRoomId
+  const isRoomV2 = !!(currentRoomId && CFG.tbl.messages);
+  if(!isRoomV2 && !CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
 
   const btn = document.querySelector('.chat-tool-btn[title="ส่งรูป"]');
   if(btn){ btn.textContent='⏳'; btn.disabled=true; }
 
   toast('กำลังประมวลผลรูป...','info');
   try{
-    // บีบอัดเหลือ 720px / 70% — balance ระหว่าง quality กับ NocoDB payload
     const compressed = await compressImg(file, 720, 0.70);
-    // ตรวจ size: NocoDB text field รับได้สูงสุดประมาณ 1MB แต่ Workers limit ~1MB ด้วย
     if(compressed.length > 180000){
-      // ลองบีบอีกรอบ
       const compressed2 = await compressImg(file, 480, 0.55);
       if(compressed2.length > 180000) return toast('รูปใหญ่เกินไปแม้บีบแล้ว — กรุณาใช้รูปที่เล็กกว่า (< 1MB)','warn');
       var finalImg = compressed2;
     } else {
       var finalImg = compressed;
     }
-    const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
-    await API.create(CFG.tbl.chat,{
-      message:`⟦img⟧${finalImg}`,
-      user_email:AUTH.user?.email||'anonymous',
-      user_name:myName,
-      CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
-    });
+    const myName  = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
+    const myEmail = AUTH.user?.email||'anonymous';
+    const msgText = `⟦img⟧${finalImg}`;
+
+    if(isRoomV2){
+      // ✅ ส่งเข้าห้อง v2 พร้อม room_id ที่ถูกต้อง
+      await ChatAPI.sendMessage({
+        room_id: currentRoomId, user_email: myEmail,
+        user_name: myName, message: msgText,
+        created_at: new Date().toISOString()
+      });
+    } else {
+      // Legacy: SmartPlus Group
+      await API.create(CFG.tbl.chat,{
+        message: msgText, user_email: myEmail,
+        user_name: myName, CreatedAt_orig: new Date().toISOString()
+      });
+    }
     await loadChatV2();
     scrollBottom();
     toast('ส่งรูปสำเร็จ ✅','success');
