@@ -2298,9 +2298,9 @@ function afterLogin(){
 
   loadDashboard();
   startPolling();
-  // ✅ Chat v2: load room list + check friend invite URL
-  loadRoomList();
-  setTimeout(()=>checkFriendInviteURL(), 800);
+  // ✅ Chat v2: delay room list load to avoid burst 429
+  setTimeout(()=>loadRoomList(), 2000);
+  setTimeout(()=>checkFriendInviteURL(), 3000);
 }
 
 /* ================================================
@@ -2985,6 +2985,9 @@ function scrollBottom(){
 
 /* ── Send text ── */
 async function sendMsg(){
+  // ถ้าอยู่ในห้อง v2 → ส่งผ่าน messages table
+  if(currentRoomId && CFG.tbl.messages) return sendMsgV2();
+
   const inp = qs('chat-in');
   let text = inp.value.trim();
   if(!text) return;
@@ -3291,42 +3294,34 @@ function insertEmoji(e){
   autoResizeTa(inp);
 }
 
-/* ── Send sticker as special message ── */
+/* ── Send sticker — routes to V2 room or legacy group chat ── */
 async function sendSticker(emoji){
+  // ถ้าอยู่ในห้อง v2 → ส่งผ่าน messages table
+  if(currentRoomId && CFG.tbl.messages){
+    return sendStickerToRoom(emoji, currentRoomId);
+  }
+  // Legacy: ส่งผ่าน chat table เดิม
   if(!CFG.tbl.chat) return toast('ยังไม่ได้ตั้งค่า Chat','error');
   closeEmoji();
-  const myName = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
-  const text = `⟦sticker⟧${emoji}`;
+  const myName  = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
   const myEmail = AUTH.user?.email||'';
+  const text    = `⟦sticker⟧${emoji}`;
 
-  // Optimistic bubble with animation
-  const tempId = 'stk-'+Date.now();
+  // Optimistic bubble
   const tempRow = document.createElement('div');
-  tempRow.id = 'msg-'+tempId;
   tempRow.className = 'msg-row own';
   tempRow.innerHTML = `
     <div class="msg-av" style="visibility:hidden">S</div>
     <div class="msg-body" style="align-items:flex-end">
-      <div class="msg-bubble sticker-bubble">
-        <span class="msg-sticker-emoji new">${emoji}</span>
-      </div>
+      <div class="msg-bubble sticker-bubble"><span class="msg-sticker-emoji new">${emoji}</span></div>
       <div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span><span class="msg-tick" style="opacity:.5">✓</span></div>
     </div>`;
   qs('chat-msgs').appendChild(tempRow);
   scrollBottom();
-
   try{
-    await API.create(CFG.tbl.chat,{
-      message:text,
-      user_email:myEmail||'anonymous',
-      user_name:myName,
-      CreatedAt_orig:new Date().toISOString()
-    });
+    await API.create(CFG.tbl.chat,{ message:text, user_email:myEmail||'anonymous', user_name:myName, CreatedAt_orig:new Date().toISOString() });
     await loadChat(); scrollBottom();
-  }catch(e){
-    tempRow.remove();
-    toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error');
-  }
+  }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
 }
 
 /* ── Textarea auto-resize ── */
@@ -3463,17 +3458,26 @@ const ChatAPI = {
 };
 
 /* ─── Load room list into sidebar ─── */
-async function loadRoomList(){
+let _roomListLoading = false;
+let _roomListLastLoad = 0;
+const ROOM_LIST_MIN_INTERVAL = 30000; // โหลดใหม่ได้ทุก 30s เท่านั้น
+
+async function loadRoomList(force=false){
   if(!CFG.tbl.chat_rooms) return;
+  const now = Date.now();
+  if(!force && _roomListLoading) return;
+  if(!force && now - _roomListLastLoad < ROOM_LIST_MIN_INTERVAL) return;
+  _roomListLoading = true;
   try{
     const d = await ChatAPI.listRooms();
     chatRooms = (d.list||[]).filter(r=>{
-      // show group rooms + private rooms where user is member
       if(r.type==='group') return true;
       return r.member1===AUTH.user?.email || r.member2===AUTH.user?.email;
     });
+    _roomListLastLoad = Date.now();
     renderRoomList();
   }catch(e){ console.warn('loadRoomList',e); }
+  finally{ _roomListLoading = false; }
 }
 
 function renderRoomList(){
@@ -3575,7 +3579,7 @@ function renderMsgRowV2(m, prevM, myEmail){
 
 /* ─── Send message V2 ─── */
 async function sendMsgV2(){
-  if(!currentRoomId || !CFG.tbl.messages) return sendMsg();
+  if(!currentRoomId || !CFG.tbl.messages) return; // caller (sendMsg) handles legacy path
   const inp = qs('chat-in');
   let text = inp.value.trim();
   if(!text) return;
@@ -3597,9 +3601,8 @@ async function sendMsgV2(){
   }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
 }
 
-/* ─── Send sticker V2 ─── */
-async function sendStickerV2(emoji){
-  if(!currentRoomId || !CFG.tbl.messages){ return sendSticker(emoji); }
+/* ─── sendStickerToRoom: ส่งสติ๊กเกอร์เข้าห้อง v2 ─── */
+async function sendStickerToRoom(emoji, roomId){
   closeEmoji();
   const myName  = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
   const myEmail = AUTH.user?.email||'anonymous';
@@ -3608,16 +3611,10 @@ async function sendStickerV2(emoji){
   tempRow.innerHTML=`<div class="msg-av" style="visibility:hidden">S</div><div class="msg-body" style="align-items:flex-end"><div class="msg-bubble sticker-bubble"><span class="msg-sticker-emoji new">${emoji}</span></div><div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span></div></div>`;
   qs('chat-msgs').appendChild(tempRow); scrollBottom();
   try{
-    await ChatAPI.sendMessage({ room_id:currentRoomId, user_email:myEmail, user_name:myName, message:`⟦sticker⟧${emoji}`, created_at:new Date().toISOString() });
+    await ChatAPI.sendMessage({ room_id:roomId, user_email:myEmail, user_name:myName, message:`⟦sticker⟧${emoji}`, created_at:new Date().toISOString() });
     await loadChatV2(); scrollBottom();
   }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ','error'); }
 }
-
-/* ─── Patch sendMsg / sendSticker to route via V2 when in a room ─── */
-const _origSendMsg     = window.sendMsg;
-const _origSendSticker = window.sendSticker;
-window.sendMsg = function(){ return currentRoomId&&CFG.tbl.messages ? sendMsgV2() : _origSendMsg?.(); };
-window.sendSticker = function(e){ return currentRoomId&&CFG.tbl.messages ? sendStickerV2(e) : _origSendSticker?.(e); };
 
 /* ─── Sidebar toggle ─── */
 function openSidebar(){ qs('chat-sidebar')?.classList.add('open'); qs('chat-sidebar-overlay')?.classList.add('open'); }
@@ -3853,7 +3850,7 @@ async function startPrivateChat(friendEmail, friendName){
       member2: friendEmail, member2_name: friendName,
       created_at: new Date().toISOString()
     });
-    await loadRoomList();
+    await loadRoomList(true);
     navigate('chat');
     const newId = room?.Id||room?.id||room?.data?.Id||room?.data?.id;
     if(newId) switchRoom(String(newId), friendName, 'private');
@@ -3953,7 +3950,7 @@ async function adminCreateRoom(){
 
     qs('admin-room-modal')?.remove();
     toast(`✅ สร้างห้อง "${name}" แล้ว`,'success');
-    await loadRoomList();
+    await loadRoomList(true);
     if(roomId) switchRoom(String(roomId), name, 'group');
   }catch(e){ toast('สร้างห้องไม่สำเร็จ: '+e.message,'error'); }
 }
@@ -3964,7 +3961,7 @@ async function adminDeleteRoom(roomId, roomName){
     await ChatAPI.deleteRoom(roomId);
     if(currentRoomId===roomId) switchRoom(null,'SmartPlus Group','group');
     toast(`🗑 ลบห้อง "${roomName}" แล้ว`,'success');
-    await loadRoomList();
+    await loadRoomList(true);
   }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
