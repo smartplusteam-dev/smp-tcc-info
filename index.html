@@ -2687,7 +2687,7 @@ async function loadPayHist(){
    CHAT POLLING — 3s
 ================================================ */
 let pollTimer = null;
-let _pollInterval = 6000;   // เริ่มที่ 6s ป้องกัน rate-limit
+let _pollInterval = 15000;  // เพิ่มเป็น 15s ป้องกัน rate-limit (Worker จำกัด 60 req/min)
 let _imgReloadDone = new Set(); // ติดตาม msgId ที่พยายาม reload แล้ว (ป้องกัน loop)
 
 function startPolling(){
@@ -3021,7 +3021,7 @@ async function sendMsg(){
       user_name:myName,
       CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
-    await loadChat();
+    await loadChatV2();
   }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
 }
 
@@ -3057,7 +3057,7 @@ async function sendImage(event){
       user_name:myName,
       CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
-    await loadChat();
+    await loadChatV2();
     scrollBottom();
     toast('ส่งรูปสำเร็จ ✅','success');
   }catch(e){
@@ -3187,7 +3187,7 @@ async function toggleReaction(id, emoji){
     if(!rx._mine && Object.keys(rx).filter(k=>k!=='_mine').length===0) delete chatReactions[id];
     saveChatReactions();
   }
-  loadChat();
+  loadChatV2();
 }
 
 /* ── Delete message ── */
@@ -3196,7 +3196,7 @@ async function deleteMsg(id){
   if(!confirmed) return;
   try{
     await API.update(CFG.tbl.chat, id, {message:'⟦del⟧'});
-    await loadChat();
+    await loadChatV2();
     toast('ลบข้อความแล้ว','success');
   }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
@@ -3320,7 +3320,7 @@ async function sendSticker(emoji){
   scrollBottom();
   try{
     await API.create(CFG.tbl.chat,{ message:text, user_email:myEmail||'anonymous', user_name:myName, CreatedAt_orig:new Date().toISOString() });
-    await loadChat(); scrollBottom();
+    await loadChatV2(); scrollBottom();
   }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
 }
 
@@ -3438,7 +3438,7 @@ const ChatAPI = {
   getRoomMembers(roomId){ return API.list(CFG.tbl.room_members,{limit:200,where:`(room_id,eq,${roomId})`}); },
   addRoomMember(data){ return API.create(CFG.tbl.room_members,data); },
   removeRoomMember(id){ return API.req('DELETE',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.room_members}/${id}`); },
-  isMember(roomId,email){ return API.list(CFG.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(user_email,eq,${email})`}); },
+  isMember(roomId,email){ return API.list(CFG.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(member_email,eq,${email})`}); },
 
   /* Messages (multi-room) */
   listMessages(roomId,limit=150){ return API.list(CFG.tbl.messages,{limit,sort:'created_at',where:`(room_id,eq,${roomId})`}); },
@@ -3935,7 +3935,7 @@ async function adminCreateRoom(){
 
     // Add admin as member
     if(roomId && CFG.tbl.room_members){
-      await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:AUTH.user?.email||'', user_name:AUTH.user?.name||'', role:'admin', joined_at:new Date().toISOString() });
+      await ChatAPI.addRoomMember({ room_id:String(roomId), member_email:AUTH.user?.email||'', member_name:AUTH.user?.name||'', role:'admin', joined_at:new Date().toISOString() });
 
       // Add other members
       const emails = membersRaw.split(',').map(e=>e.trim()).filter(e=>e&&e!==AUTH.user?.email);
@@ -3943,7 +3943,7 @@ async function adminCreateRoom(){
         const md = await API.getMemberByEmail(email).catch(()=>null);
         const member = md?.list?.[0];
         if(member){
-          await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:email, user_name:member.name||member.Name||email.split('@')[0], role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
+          await ChatAPI.addRoomMember({ room_id:String(roomId), member_email:email, member_name:member.name||member.Name||email.split('@')[0], role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
         }
       }
     }
@@ -3971,7 +3971,7 @@ async function adminPullMemberToRoom(roomId, email, name){
   try{
     const ex = await ChatAPI.isMember(roomId, email);
     if((ex.list||[]).length){ toast(`${email} อยู่ในห้องนี้แล้ว`,'info'); return; }
-    await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:email, user_name:name, role:'member', joined_at:new Date().toISOString() });
+    await ChatAPI.addRoomMember({ room_id:String(roomId), member_email:email, member_name:name, role:'member', joined_at:new Date().toISOString() });
     toast(`✅ เพิ่ม ${name} เข้าห้องแล้ว`,'success');
   }catch(e){ toast('เพิ่มไม่สำเร็จ: '+e.message,'error'); }
 }
