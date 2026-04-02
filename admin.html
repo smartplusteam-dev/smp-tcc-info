@@ -252,6 +252,9 @@ td{padding:11px 14px;vertical-align:middle;color:var(--text)}
       <div class="nav-item" id="nav-members" onclick="navigate('members')">
         <i data-lucide="users"></i> สมาชิก
       </div>
+      <div class="nav-item" id="nav-chatrooms" onclick="navigate('chatrooms')">
+        <i data-lucide="message-square"></i> จัดการห้องแชท
+      </div>
     </div>
     <div class="sidebar-bottom">
       <div class="nav-item" onclick="adminLogout()">
@@ -398,6 +401,20 @@ td{padding:11px 14px;vertical-align:middle;color:var(--text)}
       </div>
     </div>
 
+    <!-- ──── CHAT ROOMS ──── -->
+    <div class="page" id="page-chatrooms">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💬 จัดการห้องแชท</div>
+          <div class="page-sub" id="rooms-total-label">กำลังโหลด...</div>
+        </div>
+        <button class="btn btn-gold" onclick="adminOpenCreateRoomModal()">➕ สร้างห้องใหม่</button>
+      </div>
+      <div id="rooms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:4px">
+        <div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+      </div>
+    </div>
+
   </div><!-- /content-area -->
 </div>
 
@@ -430,6 +447,11 @@ const WORKER_URL = 'https://smartplus.smartplusteam.workers.dev';
 const BASE_ID    = 'p2euurotzh3sl4r';
 const SUB_TBL    = 'mkh4jjku0nz9qca';
 const MEM_TBL    = 'moy8kg0q267spu4';
+// ✅ Chat v2 Tables
+const CHAT_ROOMS_TBL    = 'mfn4oqxcvs4j74x';
+const ROOM_MEMBERS_TBL  = 'macz7hfkol40qpp';
+const MESSAGES_TBL      = 'mn8gbfjmnzs4n6e';
+const FRIENDS_TBL       = 'mo6fozvzplpdyrn';
 
 /* Default credentials (SHA-256 hash)
  * username : admin
@@ -447,7 +469,7 @@ const DEFAULT_ADMIN_HASH = '98e43f0f8a68e50efd81812a221420252ae4a33dad3acc5faf36
  */
 const ADMIN_TBL_ID = ''; // ใส่ Table ID ของตาราง admins ถ้ามี เช่น 'mxxxxxxxxxxxx'
 
-let ADMIN = { url: WORKER_URL, base: BASE_ID, tbl: { submissions: SUB_TBL, members: MEM_TBL } };
+let ADMIN = { url: WORKER_URL, base: BASE_ID, tbl: { submissions: SUB_TBL, members: MEM_TBL, chat_rooms: CHAT_ROOMS_TBL, room_members: ROOM_MEMBERS_TBL, messages: MESSAGES_TBL, friends: FRIENDS_TBL } };
 let ADMIN_SESSION = false;
 
 let allSubmissions = [];
@@ -636,13 +658,14 @@ function adminLogout(){
    NAVIGATION
 ================================================ */
 function navigate(page){
-  ['dashboard','submissions','members'].forEach(p=>{
+  ['dashboard','submissions','members','chatrooms'].forEach(p=>{
     qs('page-'+p)?.classList.toggle('active', p===page);
     qs('nav-'+p)?.classList.toggle('active', p===page);
   });
   if(page==='dashboard')   loadDashboard();
   if(page==='submissions') loadSubmissions();
   if(page==='members')     loadMembers();
+  if(page==='chatrooms')   adminLoadRooms();
   icons();
 }
 
@@ -1003,6 +1026,260 @@ function exportExcel(){
 /* ================================================
    INIT
 ================================================ */
+/* ================================================
+   ADMIN — CHAT ROOMS MANAGEMENT
+================================================ */
+let adminRooms   = [];
+let adminRoomMemberCache = {};
+
+async function adminLoadRooms(){
+  const grid = qs('rooms-grid');
+  const lbl  = qs('rooms-total-label');
+  if(!grid) return;
+  grid.innerHTML='<div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>';
+  try{
+    const d = await API.list(ADMIN.tbl.chat_rooms,{limit:100,sort:'CreatedAt'});
+    adminRooms = d.list||[];
+    if(lbl) lbl.textContent = `ทั้งหมด ${adminRooms.length} ห้อง`;
+    if(!adminRooms.length){
+      grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-s)">ยังไม่มีห้องแชท — กด "สร้างห้องใหม่"</div>';
+      return;
+    }
+    grid.innerHTML = adminRooms.map(r=>adminRoomCard(r)).join('');
+    icons();
+  }catch(e){ grid.innerHTML=`<div style="padding:20px;color:var(--error)">โหลดไม่ได้: ${e.message}</div>`; }
+}
+
+function adminRoomCard(r){
+  const rid  = r.Id||r.id;
+  const name = esc(r.name||'ไม่มีชื่อ');
+  const type = r.type==='private' ? '🔒 ส่วนตัว' : '👥 กลุ่ม';
+  const desc = esc(r.description||'');
+  const by   = esc(r.created_by||'');
+  const date = r.created_at||r.CreatedAt ? new Date(r.created_at||r.CreatedAt).toLocaleDateString('th-TH') : '—';
+  return `<div class="card" style="padding:18px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div>
+        <div style="font-weight:700;font-size:15px">${name}</div>
+        <div style="font-size:11px;color:var(--text-s);margin-top:3px">${type} · สร้างโดย ${by||'—'} · ${date}</div>
+      </div>
+      <span style="font-size:20px">${r.type==='private'?'🔒':'💬'}</span>
+    </div>
+    ${desc?`<div style="font-size:12px;color:var(--text-s);margin-bottom:10px">${desc}</div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="adminViewRoomMembers('${rid}','${name}')">👥 สมาชิก</button>
+      <button class="btn btn-outline btn-sm" onclick="adminAddMemberToRoom('${rid}','${name}')">➕ เพิ่มสมาชิก</button>
+      <button class="btn btn-danger btn-sm" onclick="adminConfirmDeleteRoom('${rid}','${name}')">🗑 ลบห้อง</button>
+    </div>
+  </div>`;
+}
+
+async function adminViewRoomMembers(roomId, roomName){
+  const modal = document.createElement('div');
+  modal.className='modal-bg';
+  modal.style.display='flex';
+  modal.id='room-members-modal';
+  modal.innerHTML=`<div class="modal-box" style="max-width:500px;max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-title">👥 สมาชิกในห้อง: ${roomName}</div>
+    <div id="rm-list" style="flex:1;overflow-y:auto;padding:4px 0">
+      <div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('room-members-modal').remove()">ปิด</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  try{
+    const d = await API.list(ADMIN.tbl.room_members,{limit:200,where:`(room_id,eq,${roomId})`});
+    const members = d.list||[];
+    const rmList  = qs('rm-list');
+    if(!rmList) return;
+    if(!members.length){ rmList.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-s)">ยังไม่มีสมาชิก</div>'; return; }
+    rmList.innerHTML = members.map(m=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:36px;height:36px;border-radius:50%;background:hsl(${strHue(m.user_email||'')},50%,35%);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">${(m.user_email||'?')[0].toUpperCase()}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(m.user_name||m.user_email||'')}</div><div style="font-size:11px;color:var(--text-s)">${esc(m.user_email||'')} · ${m.role||'member'}</div></div>
+        <button class="btn btn-danger btn-sm" onclick="adminRemoveRoomMember('${m.Id||m.id}','${esc(m.user_name||m.user_email||'')}')">ลบ</button>
+      </div>`).join('');
+    icons();
+  }catch(e){ const el=qs('rm-list'); if(el) el.innerHTML=`<div style="color:var(--error);padding:10px">${e.message}</div>`; }
+}
+
+async function adminRemoveRoomMember(memberId, memberName){
+  if(!confirm(`ลบ ${memberName} ออกจากห้อง?`)) return;
+  try{
+    await API.req('DELETE',`/api/v1/db/data/noco/${ADMIN.base}/${ADMIN.tbl.room_members}/${memberId}`);
+    toast('ลบสมาชิกออกจากห้องแล้ว','success');
+    document.getElementById('room-members-modal')?.remove();
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
+}
+
+async function adminAddMemberToRoom(roomId, roomName){
+  const modal = document.createElement('div');
+  modal.className='modal-bg';
+  modal.style.display='flex';
+  modal.id='add-member-modal';
+  modal.innerHTML=`<div class="modal-box" style="max-width:420px">
+    <div class="modal-title">➕ เพิ่มสมาชิกเข้าห้อง: ${roomName}</div>
+    <div style="padding:16px 0">
+      <input id="am-search" class="form-input" placeholder="🔍 ค้นหาชื่อหรืออีเมล..." oninput="adminSearchMemberForRoom(this.value,'${roomId}')">
+      <div id="am-results" style="margin-top:10px;max-height:240px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('add-member-modal').remove()">ปิด</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  // Load all members initially
+  adminSearchMemberForRoom('', roomId);
+}
+
+async function adminSearchMemberForRoom(query, roomId){
+  const res = qs('am-results');
+  if(!res) return;
+  res.innerHTML='<div style="color:var(--text-s);font-size:12px;padding:6px">กำลังโหลด...</div>';
+  try{
+    let d;
+    if(query.length>=2){
+      d = await API.list(ADMIN.tbl.members,{limit:30,where:`(name,like,%${query}%)~or(email,like,%${query}%)`});
+    } else {
+      d = await API.list(ADMIN.tbl.members,{limit:50,sort:'name'});
+    }
+    const members = (d.list||[]).filter(m=>m.status!=='suspended');
+    if(!members.length){ res.innerHTML='<div style="color:var(--text-s);font-size:12px;padding:8px">ไม่พบสมาชิก</div>'; return; }
+    res.innerHTML = members.map(m=>{
+      const email = m.email||m.Email||'';
+      const name  = m.name||m.Name||email;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border)">
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(name)}</div><div style="font-size:11px;color:var(--text-s)">${esc(email)}</div></div>
+        <button class="btn btn-gold btn-sm" onclick="adminDoAddMember('${roomId}','${esc(email)}','${esc(name)}',this)">เพิ่ม</button>
+      </div>`;
+    }).join('');
+  }catch(e){ res.innerHTML=`<div style="color:var(--error);font-size:12px;padding:6px">${e.message}</div>`; }
+}
+
+async function adminDoAddMember(roomId, email, name, btn){
+  btn.disabled=true; btn.textContent='⏳';
+  try{
+    // Check if already member
+    const ex = await API.list(ADMIN.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(user_email,eq,${email})`});
+    if((ex.list||[]).length){ toast(`${email} อยู่ในห้องนี้แล้ว`,'info'); btn.textContent='อยู่แล้ว'; return; }
+    await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), user_email:email, user_name:name, role:'member', joined_at:new Date().toISOString() });
+    btn.textContent='✅'; toast(`เพิ่ม ${name} เข้าห้องแล้ว`,'success');
+  }catch(e){ toast('เพิ่มไม่สำเร็จ: '+e.message,'error'); btn.disabled=false; btn.textContent='เพิ่ม'; }
+}
+
+async function adminConfirmDeleteRoom(roomId, roomName){
+  if(!confirm(`ลบห้อง "${roomName}"?\n⚠️ ข้อความทั้งหมดในห้องนี้จะถูกลบด้วย`)) return;
+  try{
+    await API.req('DELETE',`/api/v1/db/data/noco/${ADMIN.base}/${ADMIN.tbl.chat_rooms}/${roomId}`);
+    toast(`🗑 ลบห้อง "${roomName}" แล้ว`,'success');
+    adminLoadRooms();
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
+}
+
+function adminOpenCreateRoomModal(){
+  const modal = document.createElement('div');
+  modal.className='modal-bg';
+  modal.style.display='flex';
+  modal.id='create-room-modal';
+  modal.innerHTML=`<div class="modal-box" style="max-width:420px">
+    <div class="modal-title">🏠 สร้างห้องแชทใหม่</div>
+    <div style="padding:16px 0;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="form-label">ชื่อห้อง *</label>
+        <input id="cr-name" class="form-input" placeholder="เช่น ทีม Marketing">
+      </div>
+      <div>
+        <label class="form-label">คำอธิบาย</label>
+        <input id="cr-desc" class="form-input" placeholder="ไม่บังคับ">
+      </div>
+      <div>
+        <label class="form-label">เพิ่มสมาชิก (ค้นหาและเลือก)</label>
+        <input id="cr-mem-search" class="form-input" placeholder="🔍 พิมพ์ชื่อหรืออีเมล..." oninput="adminSearchForNewRoom(this.value)">
+        <div id="cr-mem-results" style="margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;display:none"></div>
+        <div id="cr-selected" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('create-room-modal').remove()">ยกเลิก</button>
+      <button class="btn btn-gold btn-sm" onclick="adminDoCreateRoom()">✅ สร้างห้อง</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  window._selectedRoomMembers = [];
+}
+
+async function adminSearchForNewRoom(query){
+  const res = qs('cr-mem-results');
+  if(!res) return;
+  if(query.length<1){ res.style.display='none'; return; }
+  res.style.display='block';
+  res.innerHTML='<div style="padding:6px;color:var(--text-s);font-size:12px">กำลังค้นหา...</div>';
+  try{
+    const d = await API.list(ADMIN.tbl.members,{limit:20,where:`(name,like,%${query}%)~or(email,like,%${query}%)`});
+    const members = (d.list||[]).filter(m=>m.status!=='suspended');
+    if(!members.length){ res.innerHTML='<div style="padding:6px;font-size:12px">ไม่พบ</div>'; return; }
+    res.innerHTML = members.map(m=>{
+      const email=m.email||m.Email||'', name=m.name||m.Name||email;
+      return `<div onclick="adminSelectRoomMember('${esc(email)}','${esc(name)}')" style="padding:8px;cursor:pointer;border-radius:6px;font-size:13px;display:flex;gap:8px;align-items:center" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">
+        <span style="font-weight:600">${esc(name)}</span><span style="color:var(--text-s);font-size:11px">${esc(email)}</span>
+      </div>`;
+    }).join('');
+  }catch(e){ res.innerHTML=`<div style="padding:6px;font-size:12px;color:var(--error)">${e.message}</div>`; }
+}
+
+function adminSelectRoomMember(email, name){
+  if(!window._selectedRoomMembers) window._selectedRoomMembers=[];
+  if(window._selectedRoomMembers.find(m=>m.email===email)){ toast(`${name} เลือกไว้แล้ว`,'info'); return; }
+  window._selectedRoomMembers.push({email,name});
+  const sel = qs('cr-selected');
+  if(sel){
+    const chip = document.createElement('span');
+    chip.style.cssText='display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(34,197,94,.15);border:1px solid var(--green);border-radius:20px;font-size:12px;color:var(--green)';
+    chip.innerHTML=`${esc(name)} <span onclick="adminDeselectRoomMember('${esc(email)}',this.parentNode)" style="cursor:pointer;font-size:15px;line-height:1">×</span>`;
+    chip.dataset.email=email;
+    sel.appendChild(chip);
+  }
+  const res=qs('cr-mem-results'); if(res) res.style.display='none';
+  const inp=qs('cr-mem-search'); if(inp) inp.value='';
+}
+
+function adminDeselectRoomMember(email, chip){
+  window._selectedRoomMembers = (window._selectedRoomMembers||[]).filter(m=>m.email!==email);
+  chip?.remove();
+}
+
+async function adminDoCreateRoom(){
+  const name = qs('cr-name')?.value.trim();
+  const desc = qs('cr-desc')?.value.trim();
+  if(!name) return toast('กรุณากรอกชื่อห้อง','warn');
+
+  const btn = document.querySelector('#create-room-modal .btn-gold');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ กำลังสร้าง...'; }
+
+  try{
+    const room = await API.create(ADMIN.tbl.chat_rooms,{ name, description:desc||'', type:'group', created_by:'admin', created_at:new Date().toISOString() });
+    const roomId = room?.Id||room?.id||room?.data?.Id||room?.data?.id;
+
+    if(roomId && ADMIN.tbl.room_members){
+      const members = window._selectedRoomMembers||[];
+      for(const m of members){
+        await API.create(ADMIN.tbl.room_members,{ room_id:String(roomId), user_email:m.email, user_name:m.name, role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
+      }
+    }
+
+    document.getElementById('create-room-modal')?.remove();
+    const addedCount = (window._selectedRoomMembers||[]).length;
+    toast('✅ สร้างห้อง "'+name+'" แล้ว'+(addedCount?' (เพิ่ม '+addedCount+' สมาชิก)':''),'success');
+    adminLoadRooms();
+  }catch(e){ toast('สร้างห้องไม่สำเร็จ: '+e.message,'error'); if(btn){ btn.disabled=false; btn.textContent='✅ สร้างห้อง'; } }
+}
+
+function strHue(s){ let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))%360; return h; }
+
 document.addEventListener('DOMContentLoaded', ()=>{
   icons();
   showView('login');
