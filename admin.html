@@ -530,6 +530,33 @@ function baht(n){ return '฿'+Number(n||0).toLocaleString('th-TH',{minimumFract
 function fmtDate(s){ try{ return new Date(s).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'}); }catch{ return '—'; } }
 function icons(){ if(window.lucide) lucide.createIcons(); }
 
+/* ── Custom Confirm Modal (แทน browser confirm()) ── */
+function showConfirmModal(title, msg, okLabel='ตกลง', cancelLabel='ยกเลิก', danger=false){
+  return new Promise(resolve => {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;backdrop-filter:blur(4px)';
+    el.innerHTML = `
+      <div style="background:#0D2230;border:1px solid #163545;border-radius:20px;padding:28px;width:100%;max-width:360px;box-shadow:0 32px 64px rgba(0,0,0,.7);animation:scaleIn .2s ease">
+        <div style="font-family:'Prompt',sans-serif;font-size:17px;font-weight:700;margin-bottom:10px;color:#E8F4F0">${title}</div>
+        <div style="font-size:13px;color:#6B9A8E;line-height:1.6;margin-bottom:24px">${msg}</div>
+        <div style="display:flex;gap:10px">
+          <button id="_cm-cancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid #163545;background:transparent;color:#6B9A8E;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s">${cancelLabel}</button>
+          <button id="_cm-ok" style="flex:1;padding:12px;border-radius:12px;border:none;background:${danger?'linear-gradient(135deg,#ef4444,#dc2626)':'linear-gradient(135deg,#22C55E,#16A34A)'};color:${danger?'#fff':'#030E07'};font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(${danger?'239,68,68':'34,197,94'},.3)">${okLabel}</button>
+        </div>
+      </div>`;
+    const style = document.createElement('style');
+    style.textContent = '@keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}';
+    el.appendChild(style);
+    document.body.appendChild(el);
+    const cleanup = (val) => { el.remove(); resolve(val); };
+    el.querySelector('#_cm-cancel').onclick = () => cleanup(false);
+    el.querySelector('#_cm-ok').onclick     = () => cleanup(true);
+    el.onclick = (e) => { if(e.target===el) cleanup(false); };
+    el.querySelector('#_cm-cancel').onmouseenter = function(){ this.style.borderColor='#22C55E'; this.style.color='#22C55E'; };
+    el.querySelector('#_cm-cancel').onmouseleave = function(){ this.style.borderColor='#163545'; this.style.color='#6B9A8E'; };
+  });
+}
+
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -1189,7 +1216,8 @@ async function adminViewRoomMembers(roomId, roomName){
 }
 
 async function adminRemoveRoomMember(memberId, memberName){
-  if(!confirm(`ลบ ${memberName} ออกจากห้อง?`)) return;
+  const ok = await showConfirmModal('ลบสมาชิกออกจากห้อง',`ต้องการลบ <b>${memberName}</b> ออกจากห้องนี้ใช่ไหม?`,'ลบออก','ยกเลิก',true);
+  if(!ok) return;
   try{
     await API.req('DELETE',`/api/v1/db/data/noco/${ADMIN.base}/${ADMIN.tbl.room_members}/${memberId}`);
     toast('ลบสมาชิกออกจากห้องแล้ว','success');
@@ -1254,7 +1282,12 @@ async function adminDoAddMember(roomId, email, name, btn){
 }
 
 async function adminConfirmDeleteRoom(roomId, roomName){
-  if(!confirm(`ลบห้อง "${roomName}"?\n⚠️ ข้อความทั้งหมดในห้องนี้จะถูกลบด้วย`)) return;
+  const ok = await showConfirmModal(
+    `ลบห้อง "${roomName}"`,
+    '⚠️ ข้อความทั้งหมดในห้องนี้จะถูกลบด้วย และไม่สามารถกู้คืนได้',
+    'ลบถาวร','ยกเลิก', true
+  );
+  if(!ok) return;
   try{
     await API.req('DELETE',`/api/v1/db/data/noco/${ADMIN.base}/${ADMIN.tbl.chat_rooms}/${roomId}`);
     toast(`🗑 ลบห้อง "${roomName}" แล้ว`,'success');
