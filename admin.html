@@ -545,6 +545,7 @@ const API = {
     return r.json();
   },
   list(tbl,p={}){ const q=new URLSearchParams(p).toString(); return this.req('GET',`/api/v1/db/data/noco/${ADMIN.base}/${tbl}?${q}`); },
+  create(tbl,data){ return this.req('POST',`/api/v1/db/data/noco/${ADMIN.base}/${tbl}`,data); },
   update(tbl,id,data){ return this.req('PATCH',`/api/v1/db/data/noco/${ADMIN.base}/${tbl}/${id}`,data); },
   count(tbl){ return this.req('GET',`/api/v1/db/data/noco/${ADMIN.base}/${tbl}/count`); }
 };
