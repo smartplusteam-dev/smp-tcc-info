@@ -318,13 +318,20 @@ a{color:var(--green);text-decoration:none}
 .msg-sticker-img:active{transform:scale(0.92)}
 @keyframes stickerPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.18)}80%{transform:scale(0.94)}100%{transform:scale(1);opacity:1}}
 .msg-sticker-img.new{animation:stickerPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
+/* CSS Emoji Sticker — ไม่พึ่ง CDN ภายนอก */
+.msg-sticker-emoji{font-size:72px;line-height:1;display:inline-block;cursor:pointer;filter:drop-shadow(0 3px 8px rgba(0,0,0,.3));transition:transform .15s;user-select:none}
+.msg-sticker-emoji:hover{transform:scale(1.12)}
+.msg-sticker-emoji:active{transform:scale(0.92)}
+.msg-sticker-emoji.new{animation:stickerPop .4s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes stickerBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}60%{transform:translateY(-4px)}}
+.msg-sticker-emoji:hover{animation:stickerBounce .5s ease}
 /* Sticker bubble — no background, like LINE */
 .msg-bubble.sticker-bubble{background:transparent!important;border:none!important;padding:2px!important;box-shadow:none!important}
 .msg-bubble.sticker-bubble:active{filter:none}
-/* Sticker picker grid — show animated GIFs */
-.sticker-img-btn{width:62px;height:62px;padding:4px;border-radius:12px;cursor:pointer;border:none;background:none;transition:all .15s;display:flex;align-items:center;justify-content:center}
+/* Sticker picker grid — CSS emoji, no CDN needed */
+.sticker-img-btn{width:62px;height:62px;padding:4px;border-radius:12px;cursor:pointer;border:none;background:none;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:36px;line-height:1}
 .sticker-img-btn:hover{background:rgba(255,255,255,.09);transform:scale(1.2)}
-.sticker-img-btn img{width:54px;height:54px;object-fit:contain}
+
 
 /* ── Meta (time + read) ── */
 .msg-meta{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-d);margin-top:3px;padding:0 2px}
@@ -694,6 +701,52 @@ a{color:var(--green);text-decoration:none}
 .text-sm{font-size:13px}.text-xs{font-size:11px}
 .fw-700{font-weight:700}.font-h{font-family:var(--font-h)}
 .w-full{width:100%}
+
+
+/* ================================================
+   CHAT v2 — Sidebar · Rooms · Friends
+================================================ */
+/* Sidebar overlay */
+.chat-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199}
+.chat-sidebar-overlay.open{display:block}
+/* Sidebar panel */
+.chat-sidebar{position:fixed;top:0;left:0;height:100%;width:280px;background:var(--surface);border-right:1px solid var(--border);z-index:200;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column}
+.chat-sidebar.open{transform:translateX(0)}
+.chat-sidebar-hdr{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-sidebar-title{font-weight:700;font-size:15px;color:var(--text);flex:1}
+.chat-sidebar-close{width:30px;height:30px;border:none;background:transparent;color:var(--text-s);cursor:pointer;border-radius:8px;font-size:18px;display:flex;align-items:center;justify-content:center}
+.chat-sidebar-close:hover{background:rgba(255,255,255,.07)}
+/* Room list */
+#chat-room-list{flex:1;overflow-y:auto;padding:8px 0}
+.room-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;position:relative}
+.room-item:hover{background:rgba(34,197,94,.05)}
+.room-item.active{border-left-color:var(--green);background:rgba(34,197,94,.08)}
+.room-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}
+.room-info{flex:1;min-width:0}
+.room-name{font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-sub{font-size:11px;color:var(--text-s);margin-top:2px}
+.room-del-btn{background:transparent;border:none;color:var(--text-d);cursor:pointer;font-size:14px;padding:4px;border-radius:6px;opacity:0;transition:opacity .15s}
+.room-item:hover .room-del-btn{opacity:1}
+.room-del-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.room-add-btn{display:flex;align-items:center;justify-content:center;padding:12px;font-size:13px;font-weight:600;color:var(--green);cursor:pointer;border-top:1px solid var(--border);margin-top:4px;transition:background .15s}
+.room-add-btn:hover{background:rgba(34,197,94,.06)}
+/* Friends page */
+#page-friends{padding:0!important}
+#page-friends.active{display:flex!important;flex-direction:column}
+.friends-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.friends-hdr-title{font-weight:700;font-size:16px;flex:1}
+#friends-list-wrap{flex:1;overflow-y:auto;padding:10px 12px 80px}
+.friends-section-hdr{font-size:11px;font-weight:700;color:var(--text-s);letter-spacing:.5px;text-transform:uppercase;padding:12px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.friend-row{display:flex;align-items:center;gap:10px;padding:10px 6px;border-radius:10px;transition:background .15s}
+.friend-row:hover{background:rgba(255,255,255,.04)}
+.friend-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0}
+.friend-info{flex:1;min-width:0}
+.friend-name{font-weight:600;font-size:13px;color:var(--text)}
+.friend-email{font-size:11px;color:var(--text-s);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-xs{padding:4px 10px!important;font-size:12px!important;border-radius:8px!important;min-height:28px}
+/* Chat header sidebar btn */
+.chat-sidebar-btn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text-s);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:background .15s;flex-shrink:0}
+.chat-sidebar-btn:hover{background:rgba(255,255,255,.07);color:var(--text)}
 
 /* ================================================
    RESPONSIVE
@@ -1094,14 +1147,25 @@ a{color:var(--green);text-decoration:none}
     <!-- ──── CHAT ──── -->
     <div class="page" id="page-chat" style="padding:0;flex-direction:column">
 
+      <!-- Chat Sidebar (room list) -->
+      <div class="chat-sidebar-overlay" id="chat-sidebar-overlay" onclick="closeSidebar()"></div>
+      <div class="chat-sidebar" id="chat-sidebar">
+        <div class="chat-sidebar-hdr">
+          <span class="chat-sidebar-title">💬 ห้องแชท</span>
+          <button class="chat-sidebar-close" onclick="closeSidebar()">✕</button>
+        </div>
+        <div id="chat-room-list"><div style="padding:14px;color:var(--text-s);font-size:13px">กำลังโหลด...</div></div>
+      </div>
+
       <!-- Header -->
       <div class="chat-hdr">
-        <div class="chat-hdr-av">S</div>
+        <button class="chat-sidebar-btn" onclick="openSidebar()" title="ห้องแชท">☰</button>
+        <div class="chat-hdr-av"><span id="chat-hdr-av-letter">S</span></div>
         <div style="flex:1">
-          <div class="chat-hdr-name">SmartPlus Group</div>
+          <div class="chat-hdr-name" id="chat-hdr-name">SmartPlus Group</div>
           <div class="chat-hdr-sub" id="chat-status">ห้องสนทนากลุ่ม</div>
         </div>
-        <button class="chat-hbtn" onclick="loadChat(true)" title="รีเฟรช"><i data-lucide="refresh-cw"></i></button>
+        <button class="chat-hbtn" onclick="loadChatV2(true)" title="รีเฟรช"><i data-lucide="refresh-cw"></i></button>
         <button class="chat-hbtn" onclick="scrollBottom()" title="ลงล่าง"><i data-lucide="chevrons-down"></i></button>
       </div>
 
@@ -1154,6 +1218,17 @@ a{color:var(--green);text-decoration:none}
         <button class="chat-send" id="chat-send-btn" onclick="sendMsg()">
           <i data-lucide="send"></i>
         </button>
+      </div>
+    </div>
+
+    <!-- ──── FRIENDS ──── -->
+    <div class="page" id="page-friends" style="padding:0;flex-direction:column">
+      <div class="friends-hdr">
+        <span class="friends-hdr-title">🤝 เพื่อน</span>
+        <button class="btn btn-gold btn-sm" onclick="openFriendInvite()">➕ เชิญเพื่อน</button>
+      </div>
+      <div id="friends-list-wrap">
+        <div class="empty"><span class="ei">🤝</span><h3>กำลังโหลด...</h3></div>
       </div>
     </div>
 
@@ -1488,6 +1563,10 @@ a{color:var(--green);text-decoration:none}
       <div class="sheet-item" id="smenu-chat" onclick="sheetNav('chat')">
         <div class="sheet-item-icon"><i data-lucide="message-circle"></i></div>
         <span>แชท</span>
+      </div>
+      <div class="sheet-item" id="smenu-friends" onclick="sheetNav('friends')">
+        <div class="sheet-item-icon"><i data-lucide="users"></i></div>
+        <span>เพื่อน</span>
       </div>
       <div class="sheet-item" id="smenu-submit" onclick="sheetNav('submit')">
         <div class="sheet-item-icon"><i data-lucide="clipboard-list"></i></div>
@@ -1858,7 +1937,10 @@ let CFG = {
   // ไม่มี token ที่นี่ — xc-token เก็บใน Worker (Cloudflare Secret) เท่านั้น
   base:  'p2euurotzh3sl4r',
   tbl:{ books:'mgyegqzp961xogx', chat:'m77tqj5r25mue0n', pay:'mhqqt37k6oqcyav',
-        members:'moy8kg0q267spu4', submissions:'mkh4jjku0nz9qca' },
+        members:'moy8kg0q267spu4', submissions:'mkh4jjku0nz9qca',
+        // ✅ Chat System v2
+        chat_rooms:'mfn4oqxcvs4j74x', room_members:'macz7hfkol40qpp',
+        messages:'mn8gbfjmnzs4n6e', friends:'mo6fozvzplpdyrn' },
   gb:{ token:'', bg:'' }
 };
 
@@ -1867,11 +1949,14 @@ function loadCFG(){
   if(s){ try{
     const v=JSON.parse(s);
     CFG.url=v.url||CFG.url; CFG.base=v.base||CFG.base;
-    // ไม่โหลด token จาก localStorage — token อยู่ใน Worker เท่านั้น
     if(v.tbl){
       CFG.tbl.books=v.tbl.books||CFG.tbl.books; CFG.tbl.chat=v.tbl.chat||CFG.tbl.chat;
       CFG.tbl.pay=v.tbl.pay||CFG.tbl.pay; CFG.tbl.members=v.tbl.members||CFG.tbl.members;
       CFG.tbl.submissions=v.tbl.submissions||CFG.tbl.submissions;
+      CFG.tbl.chat_rooms=v.tbl.chat_rooms||CFG.tbl.chat_rooms;
+      CFG.tbl.room_members=v.tbl.room_members||CFG.tbl.room_members;
+      CFG.tbl.messages=v.tbl.messages||CFG.tbl.messages;
+      CFG.tbl.friends=v.tbl.friends||CFG.tbl.friends;
     }
     if(v.gb){CFG.gb.token=v.gb.token||'';CFG.gb.bg=v.gb.bg||'';}
   }catch{}}
@@ -2213,42 +2298,38 @@ function afterLogin(){
 
   loadDashboard();
   startPolling();
+  // ✅ Chat v2: load room list + check friend invite URL
+  loadRoomList();
+  setTimeout(()=>checkFriendInviteURL(), 800);
 }
 
 /* ================================================
    NAVIGATION / ROUTER
 ================================================ */
 let curPage = 'dashboard';
-const PAGES = ['dashboard','ebooks','viewer','qr','payment','chat','analytics','submit','profile','tcc'];
+const PAGES = ['dashboard','ebooks','viewer','qr','payment','chat','analytics','submit','profile','tcc','friends'];
 
 function navigate(page){
   if(curPage==='qr' && page!=='qr') stopQR();
   curPage = page;
 
-  PAGES.forEach(p=>{
-    qs('page-'+p)?.classList.toggle('active', p===page);
-  });
+  const allPages = ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc','friends'];
+  allPages.forEach(p=>{ qs('page-'+p)?.classList.toggle('active', p===page); });
 
-  const navIds = ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc'];
-  navIds.forEach(id=>{
-    qs('snav-'+id)?.classList.toggle('active', id===page);
-  });
+  const navIds = ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc','friends'];
+  navIds.forEach(id=>{ qs('snav-'+id)?.classList.toggle('active', id===page); });
 
-  // Update bottom nav 4 items
-  ['dashboard','tcc','chat','profile'].forEach(id=>{
-    qs('bnav-'+id)?.classList.toggle('active', id===page);
-  });
+  ['dashboard','tcc','chat','profile'].forEach(id=>{ qs('bnav-'+id)?.classList.toggle('active', id===page); });
 
-  // Update sheet menu active state
-  ['dashboard','ebooks','qr','payment','chat','analytics','submit','profile','tcc'].forEach(id=>{
+  ['dashboard','ebooks','qr','payment','chat','friends','analytics','submit','profile','tcc'].forEach(id=>{
     qs('smenu-'+id)?.classList.toggle('active', id===page);
   });
 
-  // Toggle content-area overflow: hidden สำหรับ chat เพื่อให้ height:100% ทำงานได้
   const _ca = document.querySelector('.content-area');
-  if(_ca) _ca.style.overflowY = page==='chat' ? 'hidden' : 'auto';
+  if(_ca) _ca.style.overflowY = (page==='chat'||page==='friends') ? 'hidden' : 'auto';
 
-  if(page==='chat'){ qs('chat-badge').style.display='none'; loadChat(); scrollBottom(); }
+  if(page==='chat'){ qs('chat-badge').style.display='none'; loadChatV2(); scrollBottom(); }
+  if(page==='friends'){ loadFriendsList(); }
   if(page==='ebooks') loadEbooks();
   if(page==='payment') loadPayHist();
   if(page==='qr') startQR();
@@ -2610,10 +2691,10 @@ let _pollInterval = 6000;   // เริ่มที่ 6s ป้องกัน
 let _imgReloadDone = new Set(); // ติดตาม msgId ที่พยายาม reload แล้ว (ป้องกัน loop)
 
 function startPolling(){
-  if(!CFG.tbl.chat) return;
+  if(!CFG.tbl.chat && !CFG.tbl.messages) return;
   stopPolling();
   pollTimer = setInterval(()=>{
-    if(curPage==='chat') loadChat();
+    if(curPage==='chat') loadChatV2();
     else checkChatBadge();
   }, _pollInterval);
 }
@@ -2743,13 +2824,10 @@ function renderMsgRow(m, prevM, myEmail){
   if(isDeleted){
     bubbleInner = `<span class="msg-deleted-text">🚫 ลบข้อความแล้ว</span>`;
   } else if(isSticker){
-    // สติ๊กเกอร์ animated GIF — ไม่มีพื้นหลัง เหมือน LINE
+    // ✅ FIX: ใช้ CSS Emoji ขนาดใหญ่แทน GIF URL — ไม่พึ่ง fonts.gstatic.com
     bubbleClass += ' sticker-bubble';
     const safeEmoji = stickerEmoji || '😊';
-    const gifUrl = emojiToNotoUrl(safeEmoji);
-    bubbleInner = `<img class="msg-sticker-img" src="${gifUrl}" alt="${safeEmoji}" title="สติ๊กเกอร์"
-      onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=font-size:72px;filter:drop-shadow(0_3px_8px_rgba(0,0,0,.3))>${safeEmoji}</span>')"
-      onclick="event.stopPropagation()" loading="lazy">`;
+    bubbleInner = `<span class="msg-sticker-emoji" onclick="event.stopPropagation()" title="สติ๊กเกอร์">${safeEmoji}</span>`;
   } else if(isImg){
     // รูปภาพ — แสดง placeholder ระหว่างโหลด เพื่อไม่ให้เห็น broken image icon
     const safeUrl = esc(imgUrl);
@@ -2772,9 +2850,23 @@ function renderMsgRow(m, prevM, myEmail){
   // Actions for own: delete. Both: react + reply
   const longpressAttr = `oncontextmenu="event.preventDefault();showMsgActions('${esc(id)}','${esc(own?'own':'other')}','${esc(curName)}','${esc(raw.replace(/'/g,"\\'"))}',this);return false;"`;
 
+  // ✅ Avatar — ดึงรูปจาก localStorage cache (key เดียวกับ onAvatarChange)
+  const avatarKey = 'sp_pf_'+btoa(m.user_email||m.UserEmail||'').replace(/=/g,'');
+  let avatarData = '';
+  try{ const pf=JSON.parse(localStorage.getItem(avatarKey)||'{}'); avatarData=pf.avatar||''; }catch{}
+  // fallback: ถ้าเป็นข้อความของตัวเอง ลองดึงจาก AUTH ด้วย
+  if(!avatarData && own){
+    const myKey='sp_pf_'+btoa(myEmail).replace(/=/g,'');
+    try{ const pf=JSON.parse(localStorage.getItem(myKey)||'{}'); avatarData=pf.avatar||''; }catch{}
+  }
+  const avHtml = avatarData
+    ? `<img src="${avatarData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const avLetter = `<span style="display:${avatarData?'none':'flex'};align-items:center;justify-content:center;width:100%;height:100%">${(curName[0]||'?').toUpperCase()}</span>`;
+
   return `${sep}
   <div class="msg-row${own?' own':''}${grouped?' grouped':''}" id="msg-${esc(id)}" data-id="${esc(id)}">
-    <div class="msg-av" style="background:hsl(${strHue(curName)},55%,38%)">${(curName[0]||'?').toUpperCase()}</div>
+    <div class="msg-av" style="background:hsl(${strHue(curName)},55%,38%);overflow:hidden;padding:0">${avHtml}${avLetter}</div>
     <div class="msg-body">
       ${!grouped ? `<div class="msg-name">${name}</div>` : ''}
       <div class="${bubbleClass}${isDeleted?' msg-deleted':''}" ${!isSticker?longpressAttr:'onclick="event.stopPropagation()"'}>${bubbleInner}</div>
@@ -3168,16 +3260,9 @@ function buildStickerTab(){
       <span class="sticker-pack-name">${pack.name}</span>
     </div>
     <div class="sticker-grid" style="grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px">
-      ${pack.stickers.map(s=>{
-        const url = emojiToNotoUrl(s);
-        return `<button class="sticker-img-btn" onclick="sendSticker('${s}')" title="${s}">
-          <img src="${url}" alt="${s}" loading="lazy"
-            onerror="this.style.display='none';this.parentNode.innerHTML='<span style=font-size:30px>${s}</span>'">
-        </button>`;
-      }).join('')}
+      ${pack.stickers.map(s=>`<button class="sticker-img-btn" onclick="sendSticker('${s}')" title="${s}">${s}</button>`).join('')}
     </div>`).join('');
 }
-
 function switchEmojiTab(tab){
   curEmojiTab = tab;
   qs('etab-emoji')?.classList.toggle('active', tab==='emoji');
@@ -3219,13 +3304,11 @@ async function sendSticker(emoji){
   const tempRow = document.createElement('div');
   tempRow.id = 'msg-'+tempId;
   tempRow.className = 'msg-row own';
-  const gifUrl = emojiToNotoUrl(emoji);
   tempRow.innerHTML = `
     <div class="msg-av" style="visibility:hidden">S</div>
     <div class="msg-body" style="align-items:flex-end">
       <div class="msg-bubble sticker-bubble">
-        <img class="msg-sticker-img new" src="${gifUrl}" alt="${emoji}"
-          onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=font-size:72px>${emoji}</span>')">
+        <span class="msg-sticker-emoji new">${emoji}</span>
       </div>
       <div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span><span class="msg-tick" style="opacity:.5">✓</span></div>
     </div>`;
@@ -3314,20 +3397,586 @@ async function reloadMsgImg(imgEl, msgId){
 /* ── Badge check (background polling) ── */
 async function checkChatBadge(){
   try{
-    if(!CFG.tbl.chat) return;
-    const c = await API.count(CFG.tbl.chat);
-    if(c.count > lastMsgCnt && lastMsgCnt > 0){
+    // Use messages table for current room, fallback to legacy chat table
+    const tblId = (currentRoomId && CFG.tbl.messages) ? CFG.tbl.messages : CFG.tbl.chat;
+    if(!tblId) return;
+    let countWhere = '';
+    if(currentRoomId && CFG.tbl.messages){
+      countWhere = `?where=(room_id,eq,${currentRoomId})`;
+    }
+    const c = await API.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tblId}/count${countWhere}`);
+    const total = c.count||0;
+    if(total > lastMsgCnt && lastMsgCnt > 0){
       const badge = qs('chat-badge');
       if(curPage==='chat'){
-        // On chat page — show typing then reload
         showTyping('สมาชิก');
-        setTimeout(()=>loadChat(), 1200);
-      } else {
-        badge.textContent = c.count-lastMsgCnt;
+        setTimeout(()=>loadChatV2(), 1200);
+      } else if(badge) {
+        badge.textContent = total - lastMsgCnt;
         badge.style.display = 'flex';
       }
     }
   }catch(e){ if(String(e.message).includes('429')) on429(); }
+}
+
+/* ================================================
+   CHAT SYSTEM v2 — Rooms · Friends · Private
+================================================ */
+
+/* ─── State ─── */
+let currentRoomId   = null;   // ห้องที่กำลังเปิดอยู่ (null = group เดิม)
+let currentRoomName = 'SmartPlus Group';
+let currentRoomType = 'group';
+let chatRooms       = [];
+let friendsList     = [];
+let lastMsgId       = null;
+
+/* ─── API helpers ─── */
+const ChatAPI = {
+  /* Rooms */
+  listRooms(){ return API.list(CFG.tbl.chat_rooms,{limit:100,sort:'CreatedAt'}); },
+  createRoom(data){ return API.create(CFG.tbl.chat_rooms,data); },
+  deleteRoom(id){ return API.req('DELETE',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.chat_rooms}/${id}`); },
+  updateRoom(id,data){ return API.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.chat_rooms}/${id}`,data); },
+
+  /* Room members */
+  getRoomMembers(roomId){ return API.list(CFG.tbl.room_members,{limit:200,where:`(room_id,eq,${roomId})`}); },
+  addRoomMember(data){ return API.create(CFG.tbl.room_members,data); },
+  removeRoomMember(id){ return API.req('DELETE',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.room_members}/${id}`); },
+  isMember(roomId,email){ return API.list(CFG.tbl.room_members,{limit:1,where:`(room_id,eq,${roomId})~and(user_email,eq,${email})`}); },
+
+  /* Messages (multi-room) */
+  listMessages(roomId,limit=150){ return API.list(CFG.tbl.messages,{limit,sort:'created_at',where:`(room_id,eq,${roomId})`}); },
+  sendMessage(data){ return API.create(CFG.tbl.messages,data); },
+  deleteMessage(id){ return API.req('DELETE',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.messages}/${id}`); },
+
+  /* Friends */
+  getFriends(email){
+    return API.list(CFG.tbl.friends,{limit:100,where:`(requester_email,eq,${email})~or(target_email,eq,${email})`});
+  },
+  getFriendReq(from,to){
+    return API.list(CFG.tbl.friends,{limit:1,where:`(requester_email,eq,${from})~and(target_email,eq,${to})`});
+  },
+  createFriend(data){ return API.create(CFG.tbl.friends,data); },
+  updateFriend(id,data){ return API.req('PATCH',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.friends}/${id}`,data); },
+  deleteFriend(id){ return API.req('DELETE',`/api/v1/db/data/noco/${CFG.base}/${CFG.tbl.friends}/${id}`); },
+};
+
+/* ─── Load room list into sidebar ─── */
+async function loadRoomList(){
+  if(!CFG.tbl.chat_rooms) return;
+  try{
+    const d = await ChatAPI.listRooms();
+    chatRooms = (d.list||[]).filter(r=>{
+      // show group rooms + private rooms where user is member
+      if(r.type==='group') return true;
+      return r.member1===AUTH.user?.email || r.member2===AUTH.user?.email;
+    });
+    renderRoomList();
+  }catch(e){ console.warn('loadRoomList',e); }
+}
+
+function renderRoomList(){
+  const wrap = qs('chat-room-list');
+  if(!wrap) return;
+  const myEmail = AUTH.user?.email||'';
+  const isAdmin = AUTH.user?.role==='admin';
+
+  let html = `
+    <div class="room-item${!currentRoomId?' active':''}" onclick="switchRoom(null,'SmartPlus Group','group')">
+      <div class="room-av" style="background:linear-gradient(135deg,var(--green-d),var(--green))">S</div>
+      <div class="room-info"><div class="room-name">SmartPlus Group</div><div class="room-sub">ห้องสนทนาหลัก</div></div>
+    </div>`;
+
+  chatRooms.forEach(r=>{
+    const active = currentRoomId===String(r.Id||r.id);
+    const displayName = r.type==='private'
+      ? (r.member1===myEmail ? r.member2_name : r.member1_name)||r.name
+      : r.name||'ห้องใหม่';
+    const av = displayName[0]?.toUpperCase()||'?';
+    const hue = strHue(displayName);
+    html += `<div class="room-item${active?' active':''}" onclick="switchRoom('${r.Id||r.id}','${esc(displayName)}','${r.type||'group'}')">
+      <div class="room-av" style="background:hsl(${hue},55%,38%)">${av}</div>
+      <div class="room-info"><div class="room-name">${esc(displayName)}</div><div class="room-sub">${r.type==='private'?'💬 ส่วนตัว':'👥 กลุ่ม'}</div></div>
+      ${isAdmin&&r.type!=='private'?`<button class="room-del-btn" onclick="event.stopPropagation();adminDeleteRoom('${r.Id||r.id}','${esc(displayName)}')" title="ลบห้อง">🗑</button>`:''}
+    </div>`;
+  });
+
+  if(isAdmin){
+    html += `<div class="room-add-btn" onclick="adminOpenCreateRoom()">➕ สร้างห้องใหม่</div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+/* ─── Switch room ─── */
+async function switchRoom(roomId, roomName, roomType){
+  currentRoomId   = roomId;
+  currentRoomName = roomName;
+  currentRoomType = roomType||'group';
+
+  // Update header
+  const hdrName = qs('chat-hdr-name');
+  const hdrSub  = qs('chat-status');
+  const hdrAv   = qs('chat-hdr-av-letter');
+  if(hdrName) hdrName.textContent = roomName;
+  if(hdrAv)   hdrAv.textContent   = roomName[0]?.toUpperCase()||'S';
+
+  renderRoomList();
+  closeSidebar();
+  await loadChatV2();
+}
+
+/* ─── Load messages for current room ─── */
+async function loadChatV2(force=false){
+  // If no rooms table configured, fall back to legacy chat
+  if(!CFG.tbl.messages || !currentRoomId){
+    return loadChat(force);
+  }
+
+  const el = qs('chat-msgs');
+  if(!el) return;
+  try{
+    loadChatReactions();
+    const d = await ChatAPI.listMessages(currentRoomId, 150);
+    const msgs = d.list||[];
+
+    const myEmail = AUTH.user?.email||'';
+    const wasBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    const isNewMsg  = msgs.length > lastMsgCnt && lastMsgCnt > 0;
+
+    el.innerHTML = msgs.length
+      ? msgs.map((m,i)=>renderMsgRowV2(m, msgs[i-1]||null, myEmail)).join('')
+      : `<div class="empty"><span class="ei">💬</span><h3>ยังไม่มีข้อความ</h3></div>`;
+
+    if(isNewMsg && !wasBottom){ const p=qs('new-msg-pill'); if(p) p.style.display='block'; }
+    if(wasBottom||force||lastMsgCnt===0) scrollBottom();
+    lastMsgCnt = msgs.length;
+  }catch(e){ console.warn('loadChatV2',e); }
+}
+
+/* ─── renderMsgRowV2 — maps messages table fields ─── */
+function renderMsgRowV2(m, prevM, myEmail){
+  // Normalize fields from messages table
+  const normalized = {
+    Id: m.Id||m.id,
+    user_email: m.user_email||m.UserEmail||'',
+    user_name:  m.user_name||m.UserName||'',
+    message:    m.message||m.Message||'',
+    CreatedAt:  m.created_at||m.CreatedAt||m.createdAt||'',
+  };
+  return renderMsgRow(normalized, prevM ? {
+    Id: prevM.Id||prevM.id,
+    user_email: prevM.user_email||prevM.UserEmail||'',
+    user_name:  prevM.user_name||prevM.UserName||'',
+    message:    prevM.message||prevM.Message||'',
+    CreatedAt:  prevM.created_at||prevM.CreatedAt||'',
+  } : null, myEmail);
+}
+
+/* ─── Send message V2 ─── */
+async function sendMsgV2(){
+  if(!currentRoomId || !CFG.tbl.messages) return sendMsg();
+  const inp = qs('chat-in');
+  let text = inp.value.trim();
+  if(!text) return;
+
+  let body = text;
+  if(replyCtx){ body=`⟦reply:${replyCtx.name}|${replyCtx.text.slice(0,60)}⟧${text}`; cancelReply(); }
+
+  inp.value=''; autoResizeTa(inp); closeEmoji();
+
+  const myName  = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
+  const myEmail = AUTH.user?.email||'anonymous';
+  const myKey   = 'sp_pf_'+btoa(myEmail).replace(/=/g,'');
+  let av = '';
+  try{ av = JSON.parse(localStorage.getItem(myKey)||'{}').avatar||''; }catch{}
+
+  try{
+    await ChatAPI.sendMessage({ room_id:currentRoomId, user_email:myEmail, user_name:myName, avatar:av, message:body, created_at:new Date().toISOString() });
+    await loadChatV2(); scrollBottom();
+  }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
+}
+
+/* ─── Send sticker V2 ─── */
+async function sendStickerV2(emoji){
+  if(!currentRoomId || !CFG.tbl.messages){ return sendSticker(emoji); }
+  closeEmoji();
+  const myName  = AUTH.user?.display_name||AUTH.user?.name||AUTH.user?.email?.split('@')[0]||'ฉัน';
+  const myEmail = AUTH.user?.email||'anonymous';
+  const tempRow = document.createElement('div');
+  tempRow.className='msg-row own';
+  tempRow.innerHTML=`<div class="msg-av" style="visibility:hidden">S</div><div class="msg-body" style="align-items:flex-end"><div class="msg-bubble sticker-bubble"><span class="msg-sticker-emoji new">${emoji}</span></div><div class="msg-meta" style="justify-content:flex-end"><span>${fmtTime(new Date().toISOString())}</span></div></div>`;
+  qs('chat-msgs').appendChild(tempRow); scrollBottom();
+  try{
+    await ChatAPI.sendMessage({ room_id:currentRoomId, user_email:myEmail, user_name:myName, message:`⟦sticker⟧${emoji}`, created_at:new Date().toISOString() });
+    await loadChatV2(); scrollBottom();
+  }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ','error'); }
+}
+
+/* ─── Patch sendMsg / sendSticker to route via V2 when in a room ─── */
+const _origSendMsg     = window.sendMsg;
+const _origSendSticker = window.sendSticker;
+window.sendMsg = function(){ return currentRoomId&&CFG.tbl.messages ? sendMsgV2() : _origSendMsg?.(); };
+window.sendSticker = function(e){ return currentRoomId&&CFG.tbl.messages ? sendStickerV2(e) : _origSendSticker?.(e); };
+
+/* ─── Sidebar toggle ─── */
+function openSidebar(){ qs('chat-sidebar')?.classList.add('open'); qs('chat-sidebar-overlay')?.classList.add('open'); }
+function closeSidebar(){ qs('chat-sidebar')?.classList.remove('open'); qs('chat-sidebar-overlay')?.classList.remove('open'); }
+
+/* ================================================
+   FRIENDS SYSTEM
+================================================ */
+
+/* ─── Generate friend invite link ─── */
+function genFriendToken(){
+  return btoa(AUTH.user?.email||'').replace(/=/g,'') + '_' + Math.random().toString(36).slice(2,9);
+}
+
+async function openFriendInvite(){
+  const myEmail = AUTH.user?.email||'';
+  if(!myEmail) return toast('กรุณาเข้าสู่ระบบก่อน','error');
+  const token = genFriendToken();
+  const link  = `${location.origin}${location.pathname}?add_friend=${encodeURIComponent(myEmail)}&token=${token}`;
+
+  // Save token to localStorage for verification
+  localStorage.setItem('sp_fi_token', token);
+
+  // Show invite modal
+  const modal = document.createElement('div');
+  modal.className='modal-overlay open';
+  modal.id='friend-invite-modal';
+  modal.innerHTML=`
+    <div class="modal-box" style="max-width:340px">
+      <div class="modal-hdr"><span class="modal-title">🤝 เชิญเป็นเพื่อน</span><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+      <div style="padding:20px">
+        <p style="font-size:13px;color:var(--text-s);margin-bottom:16px">แชร์ลิงค์หรือ QR Code นี้ให้เพื่อนสแกน</p>
+        <div id="friend-qr" style="display:flex;justify-content:center;margin-bottom:16px"></div>
+        <div class="form-input" style="font-size:11px;word-break:break-all;padding:10px;user-select:all">${link}</div>
+        <button class="btn btn-gold mt-3" style="width:100%" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('คัดลอกแล้ว ✅','success'))">📋 คัดลอกลิงค์</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Generate QR via qrcode.js CDN
+  const script = document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  script.onload=()=>{ try{ new QRCode(qs('friend-qr'),{text:link,width:180,height:180,colorDark:'#22c55e',colorLight:'#0d1b12'}); }catch{} };
+  document.head.appendChild(script);
+  if(window.QRCode){ try{ new QRCode(qs('friend-qr'),{text:link,width:180,height:180,colorDark:'#22c55e',colorLight:'#0d1b12'}); }catch{} }
+}
+
+/* ─── Handle incoming friend request via URL ─── */
+async function checkFriendInviteURL(){
+  const params = new URLSearchParams(location.search);
+  const fromEmail = params.get('add_friend');
+  const token     = params.get('token');
+  if(!fromEmail || !token) return;
+
+  // Clean URL
+  history.replaceState({},'',location.pathname);
+
+  const myEmail = AUTH.user?.email||'';
+  if(!myEmail){ toast('กรุณาเข้าสู่ระบบก่อนรับคำขอเป็นเพื่อน','warn'); return; }
+  if(fromEmail===myEmail){ toast('ไม่สามารถเพิ่มตัวเองเป็นเพื่อนได้','warn'); return; }
+
+  // Check if already friends
+  try{
+    const ex = await ChatAPI.getFriendReq(fromEmail, myEmail);
+    const ex2= await ChatAPI.getFriendReq(myEmail, fromEmail);
+    const existing = (ex.list||[]).concat(ex2.list||[]);
+    const already  = existing.find(f=>f.status==='accepted');
+    if(already){ toast('คุณเป็นเพื่อนกันอยู่แล้ว','info'); return; }
+    const pending = existing.find(f=>f.status==='pending');
+
+    const modal = document.createElement('div');
+    modal.className='modal-overlay open';
+    modal.innerHTML=`
+      <div class="modal-box" style="max-width:320px">
+        <div class="modal-hdr"><span class="modal-title">🤝 คำขอเป็นเพื่อน</span></div>
+        <div style="padding:20px;text-align:center">
+          <div style="font-size:48px;margin-bottom:12px">👤</div>
+          <p style="font-weight:700;font-size:15px">${esc(fromEmail)}</p>
+          <p style="font-size:13px;color:var(--text-s);margin:8px 0 20px">ส่งคำขอเป็นเพื่อนมาหาคุณ</p>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline" style="flex:1" onclick="rejectFriend('${esc(fromEmail)}','${pending?.Id||pending?.id||''}');this.closest('.modal-overlay').remove()">❌ ปฏิเสธ</button>
+            <button class="btn btn-gold" style="flex:1" onclick="acceptFriend('${esc(fromEmail)}','${pending?.Id||pending?.id||''}');this.closest('.modal-overlay').remove()">✅ ยอมรับ</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    // Create pending record if not exist
+    if(!pending){
+      const myName = AUTH.user?.name||myEmail.split('@')[0];
+      await ChatAPI.createFriend({ requester_email:fromEmail, requester_name:fromEmail.split('@')[0], target_email:myEmail, target_name:myName, status:'pending', link_token:token, created_at:new Date().toISOString() });
+    }
+  }catch(e){ toast('ตรวจสอบคำขอไม่ได้: '+e.message,'error'); }
+}
+
+async function acceptFriend(fromEmail, recordId){
+  try{
+    if(recordId){
+      await ChatAPI.updateFriend(recordId,{status:'accepted'});
+    } else {
+      const ex = await ChatAPI.getFriendReq(fromEmail, AUTH.user?.email||'');
+      const rec = (ex.list||[])[0];
+      if(rec) await ChatAPI.updateFriend(rec.Id||rec.id,{status:'accepted'});
+    }
+    toast(`✅ ยอมรับ ${fromEmail} เป็นเพื่อนแล้ว`,'success');
+    await loadFriendsList();
+  }catch(e){ toast('ยอมรับไม่สำเร็จ: '+e.message,'error'); }
+}
+
+async function rejectFriend(fromEmail, recordId){
+  try{
+    if(recordId){
+      await ChatAPI.updateFriend(recordId,{status:'rejected'});
+    } else {
+      const ex = await ChatAPI.getFriendReq(fromEmail, AUTH.user?.email||'');
+      const rec = (ex.list||[])[0];
+      if(rec) await ChatAPI.updateFriend(rec.Id||rec.id,{status:'rejected'});
+    }
+    toast('ปฏิเสธคำขอแล้ว','info');
+  }catch(e){ console.warn(e); }
+}
+
+async function blockFriend(friendEmail){
+  if(!confirm(`บล็อค ${friendEmail}?`)) return;
+  try{
+    const myEmail = AUTH.user?.email||'';
+    const ex  = await ChatAPI.getFriendReq(myEmail, friendEmail);
+    const ex2 = await ChatAPI.getFriendReq(friendEmail, myEmail);
+    const rec = (ex.list||[]).concat(ex2.list||[])[0];
+    if(rec) await ChatAPI.updateFriend(rec.Id||rec.id,{status:'blocked'});
+    else await ChatAPI.createFriend({requester_email:myEmail, target_email:friendEmail, status:'blocked', created_at:new Date().toISOString()});
+    toast(`🚫 บล็อค ${friendEmail} แล้ว`,'success');
+    await loadFriendsList();
+  }catch(e){ toast('บล็อคไม่สำเร็จ','error'); }
+}
+
+async function removeFriend(friendEmail, recordId){
+  if(!confirm(`ลบเพื่อน ${friendEmail}?`)) return;
+  try{
+    if(recordId) await ChatAPI.deleteFriend(recordId);
+    toast('ลบเพื่อนแล้ว','success');
+    await loadFriendsList();
+  }catch(e){ toast('ลบไม่สำเร็จ','error'); }
+}
+
+/* ─── Load & render friends ─── */
+async function loadFriendsList(){
+  const myEmail = AUTH.user?.email||'';
+  if(!myEmail||!CFG.tbl.friends) return;
+  try{
+    const d = await ChatAPI.getFriends(myEmail);
+    friendsList = d.list||[];
+    renderFriendsPage();
+  }catch(e){ console.warn('loadFriendsList',e); }
+}
+
+function renderFriendsPage(){
+  const wrap = qs('friends-list-wrap');
+  if(!wrap) return;
+  const myEmail = AUTH.user?.email||'';
+  const pending  = friendsList.filter(f=>f.status==='pending'&&f.target_email===myEmail);
+  const accepted = friendsList.filter(f=>f.status==='accepted');
+  const blocked  = friendsList.filter(f=>f.status==='blocked'&&f.requester_email===myEmail);
+
+  let html='';
+  if(pending.length){
+    html+=`<div class="friends-section-hdr">⏳ รอการตอบรับ (${pending.length})</div>`;
+    pending.forEach(f=>{
+      html+=`<div class="friend-row">
+        <div class="friend-av" style="background:hsl(${strHue(f.requester_email)},55%,38%)">${(f.requester_email[0]||'?').toUpperCase()}</div>
+        <div class="friend-info"><div class="friend-name">${esc(f.requester_name||f.requester_email)}</div><div class="friend-email">${esc(f.requester_email)}</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-xs" onclick="rejectFriend('${esc(f.requester_email)}','${f.Id||f.id}')">❌</button>
+          <button class="btn btn-gold btn-xs" onclick="acceptFriend('${esc(f.requester_email)}','${f.Id||f.id}')">✅</button>
+        </div>
+      </div>`;
+    });
+  }
+  if(accepted.length){
+    html+=`<div class="friends-section-hdr">✅ เพื่อน (${accepted.length})</div>`;
+    accepted.forEach(f=>{
+      const isMine    = f.requester_email===myEmail;
+      const friendEmail = isMine ? f.target_email : f.requester_email;
+      const friendName  = isMine ? (f.target_name||f.target_email) : (f.requester_name||f.requester_email);
+      const rid = f.Id||f.id;
+      html+=`<div class="friend-row">
+        <div class="friend-av" style="background:hsl(${strHue(friendEmail)},55%,38%)">${(friendEmail[0]||'?').toUpperCase()}</div>
+        <div class="friend-info"><div class="friend-name">${esc(friendName)}</div><div class="friend-email">${esc(friendEmail)}</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-xs" onclick="startPrivateChat('${esc(friendEmail)}','${esc(friendName)}')">💬</button>
+          <button class="btn btn-outline btn-xs" onclick="blockFriend('${esc(friendEmail)}')">🚫</button>
+          <button class="btn btn-outline btn-xs" onclick="removeFriend('${esc(friendEmail)}','${rid}')">🗑</button>
+        </div>
+      </div>`;
+    });
+  }
+  if(blocked.length){
+    html+=`<div class="friends-section-hdr">🚫 บล็อคแล้ว</div>`;
+    blocked.forEach(f=>{
+      html+=`<div class="friend-row" style="opacity:.6">
+        <div class="friend-av" style="background:#444">${(f.target_email[0]||'?').toUpperCase()}</div>
+        <div class="friend-info"><div class="friend-name">${esc(f.target_email)}</div></div>
+        <button class="btn btn-outline btn-xs" onclick="removeFriend('${esc(f.target_email)}','${f.Id||f.id}')">ปลดบล็อค</button>
+      </div>`;
+    });
+  }
+  if(!html) html=`<div class="empty"><span class="ei">🤝</span><h3>ยังไม่มีเพื่อน</h3><p>แชร์ลิงค์เชิญเพื่อนเข้าร่วม</p></div>`;
+  wrap.innerHTML=html;
+}
+
+/* ─── Start private chat ─── */
+async function startPrivateChat(friendEmail, friendName){
+  if(!CFG.tbl.chat_rooms||!CFG.tbl.messages) return toast('ยังไม่ได้ตั้งค่า Tables ใหม่','warn');
+  const myEmail = AUTH.user?.email||'';
+  const myName  = AUTH.user?.name||myEmail.split('@')[0];
+
+  // Find existing private room
+  try{
+    const existing = chatRooms.find(r=>
+      r.type==='private'&&((r.member1===myEmail&&r.member2===friendEmail)||(r.member1===friendEmail&&r.member2===myEmail))
+    );
+    if(existing){
+      navigate('chat');
+      switchRoom(String(existing.Id||existing.id), friendName, 'private');
+      return;
+    }
+    // Create new private room
+    const room = await ChatAPI.createRoom({
+      name: `${myName} & ${friendName}`,
+      type: 'private',
+      created_by: myEmail,
+      member1: myEmail, member1_name: myName,
+      member2: friendEmail, member2_name: friendName,
+      created_at: new Date().toISOString()
+    });
+    await loadRoomList();
+    navigate('chat');
+    const newId = room?.Id||room?.id||room?.data?.Id||room?.data?.id;
+    if(newId) switchRoom(String(newId), friendName, 'private');
+    toast('เปิดห้องแชทส่วนตัวแล้ว','success');
+  }catch(e){ toast('เปิดห้องไม่ได้: '+e.message,'error'); }
+}
+
+/* ================================================
+   ADMIN — ROOM MANAGEMENT
+================================================ */
+
+function adminOpenCreateRoom(){
+  const modal = document.createElement('div');
+  modal.className='modal-overlay open';
+  modal.id='admin-room-modal';
+  modal.innerHTML=`
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-hdr">
+        <span class="modal-title">🏠 สร้างห้องแชทใหม่</span>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label class="form-label">ชื่อห้อง</label>
+          <input id="ar-name" class="form-input" placeholder="เช่น ห้องแผนก A">
+        </div>
+        <div>
+          <label class="form-label">คำอธิบาย</label>
+          <input id="ar-desc" class="form-input" placeholder="ไม่บังคับ">
+        </div>
+        <div>
+          <label class="form-label">ดึงสมาชิกเข้าห้อง (อีเมล คั่นด้วย ,)</label>
+          <textarea id="ar-members" class="form-input" rows="3" placeholder="user@example.com, user2@example.com"></textarea>
+          <div style="margin-top:6px">
+            <button class="btn btn-outline btn-sm" onclick="adminLoadAllMembersForRoom()">📋 เลือกจากรายชื่อสมาชิก</button>
+          </div>
+          <div id="ar-member-picker" style="display:none;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px;padding:4px"></div>
+        </div>
+        <button class="btn btn-gold" onclick="adminCreateRoom()">✅ สร้างห้อง</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminLoadAllMembersForRoom(){
+  const picker = qs('ar-member-picker');
+  if(!picker) return;
+  picker.style.display='block';
+  picker.innerHTML='<div style="padding:8px;color:var(--text-s);font-size:12px">กำลังโหลด...</div>';
+  try{
+    const d = await API.list(CFG.tbl.members,{limit:200,sort:'name'});
+    const members = (d.list||[]).filter(m=>m.status!=='suspended');
+    if(!members.length){ picker.innerHTML='<div style="padding:8px;font-size:12px">ไม่พบสมาชิก</div>'; return; }
+    picker.innerHTML = members.map(m=>{
+      const email = m.email||m.Email||'';
+      const name  = m.name||m.Name||email;
+      return `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-radius:6px;font-size:13px">
+        <input type="checkbox" class="ar-mem-cb" value="${esc(email)}" style="accent-color:var(--green)">
+        <span>${esc(name)}</span><span style="color:var(--text-d);font-size:11px">${esc(email)}</span>
+      </label>`;
+    }).join('');
+    // Sync checkboxes → textarea
+    picker.querySelectorAll('.ar-mem-cb').forEach(cb=>{
+      cb.addEventListener('change',()=>{
+        const checked=[...picker.querySelectorAll('.ar-mem-cb:checked')].map(c=>c.value);
+        const ta=qs('ar-members'); if(ta) ta.value=checked.join(', ');
+      });
+    });
+  }catch(e){ picker.innerHTML=`<div style="padding:8px;font-size:12px;color:var(--red)">โหลดไม่ได้: ${e.message}</div>`; }
+}
+
+async function adminCreateRoom(){
+  const name    = qs('ar-name')?.value.trim();
+  const desc    = qs('ar-desc')?.value.trim();
+  const membersRaw = qs('ar-members')?.value||'';
+  if(!name) return toast('กรุณากรอกชื่อห้อง','warn');
+  if(!CFG.tbl.chat_rooms) return toast('ยังไม่ได้ตั้งค่า Table chat_rooms','error');
+
+  try{
+    const room = await ChatAPI.createRoom({ name, description:desc, type:'group', created_by:AUTH.user?.email||'', created_at:new Date().toISOString() });
+    const roomId = room?.Id||room?.id||room?.data?.Id||room?.data?.id;
+
+    // Add admin as member
+    if(roomId && CFG.tbl.room_members){
+      await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:AUTH.user?.email||'', user_name:AUTH.user?.name||'', role:'admin', joined_at:new Date().toISOString() });
+
+      // Add other members
+      const emails = membersRaw.split(',').map(e=>e.trim()).filter(e=>e&&e!==AUTH.user?.email);
+      for(const email of emails){
+        const md = await API.getMemberByEmail(email).catch(()=>null);
+        const member = md?.list?.[0];
+        if(member){
+          await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:email, user_name:member.name||member.Name||email.split('@')[0], role:'member', joined_at:new Date().toISOString() }).catch(()=>{});
+        }
+      }
+    }
+
+    qs('admin-room-modal')?.remove();
+    toast(`✅ สร้างห้อง "${name}" แล้ว`,'success');
+    await loadRoomList();
+    if(roomId) switchRoom(String(roomId), name, 'group');
+  }catch(e){ toast('สร้างห้องไม่สำเร็จ: '+e.message,'error'); }
+}
+
+async function adminDeleteRoom(roomId, roomName){
+  if(!confirm(`ลบห้อง "${roomName}"? ข้อความทั้งหมดจะหายไปด้วย`)) return;
+  try{
+    await ChatAPI.deleteRoom(roomId);
+    if(currentRoomId===roomId) switchRoom(null,'SmartPlus Group','group');
+    toast(`🗑 ลบห้อง "${roomName}" แล้ว`,'success');
+    await loadRoomList();
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
+}
+
+/* ─── Admin: pull member into room ─── */
+async function adminPullMemberToRoom(roomId, email, name){
+  if(!CFG.tbl.room_members) return;
+  try{
+    const ex = await ChatAPI.isMember(roomId, email);
+    if((ex.list||[]).length){ toast(`${email} อยู่ในห้องนี้แล้ว`,'info'); return; }
+    await ChatAPI.addRoomMember({ room_id:String(roomId), user_email:email, user_name:name, role:'member', joined_at:new Date().toISOString() });
+    toast(`✅ เพิ่ม ${name} เข้าห้องแล้ว`,'success');
+  }catch(e){ toast('เพิ่มไม่สำเร็จ: '+e.message,'error'); }
 }
 
 /* ================================================
