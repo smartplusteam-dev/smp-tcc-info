@@ -1984,6 +1984,40 @@ function updateSubmitOverlay(msg, pct){
 function hideSubmitOverlay(){ qs('submit-overlay')?.remove(); }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+/* ================================================================
+   REQUEST QUEUE — ป้องกัน burst 429 ที่ต้นทาง
+   แทนที่จะยิง fetch พร้อมกัน ทุก request ต้องผ่าน queue นี้
+   concurrency = 1 (ทีละ 1) + delay 350ms ระหว่าง request
+   ================================================================ */
+const ReqQueue = (() => {
+  const DELAY   = 350;   // ms ระหว่างแต่ละ request
+  const MAX_CON = 1;     // รัน request พร้อมกันสูงสุด 1 ตัว
+  let running   = 0;
+  let lastFired = 0;
+  const queue   = [];
+
+  function pump(){
+    if(running >= MAX_CON || !queue.length) return;
+    const now  = Date.now();
+    const wait = Math.max(0, lastFired + DELAY - now);
+    setTimeout(async ()=>{
+      if(!queue.length) return;
+      const { fn, resolve, reject } = queue.shift();
+      running++;
+      lastFired = Date.now();
+      try   { resolve(await fn()); }
+      catch (e){ reject(e); }
+      finally { running--; pump(); }
+    }, wait);
+  }
+
+  return {
+    add(fn){ return new Promise((resolve,reject)=>{ queue.push({fn,resolve,reject}); pump(); }); },
+    clear(){ queue.length = 0; },
+    get size(){ return queue.length; }
+  };
+})();
+
 /* ================================================
    CONFIG
 ================================================ */
@@ -2061,11 +2095,19 @@ const API = {
 
   async req(method,path,body=null){
     if(!CFG.url){toast('กรุณาตั้งค่า Worker URL ก่อน','error');openConfig();throw new Error('no url');}
-    const opts={method,headers:this.hdrs()};
-    if(body) opts.body=JSON.stringify(body);
-    const r=await fetch(CFG.url+path,opts);
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.msg||e.message||`HTTP ${r.status}`);}
-    return r.json();
+    // ✅ FIX: ทุก request ผ่าน ReqQueue — ทีละ 1 request, เว้น 350ms
+    return ReqQueue.add(async ()=>{
+      const opts={method,headers:this.hdrs()};
+      if(body) opts.body=JSON.stringify(body);
+      const r=await fetch(CFG.url+path,opts);
+      if(r.status===429){
+        // ✅ จับ 429 ที่ต้นทาง — trigger backoff โดยไม่ต้องพึ่ง caller
+        setTimeout(()=>{ if(typeof on429==='function') on429(); }, 0);
+        throw new Error('429');
+      }
+      if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.msg||e.message||`HTTP ${r.status}`);}
+      return r.json();
+    });
   },
 
   /* Members */
@@ -2351,11 +2393,15 @@ function afterLogin(){
   // Load profile extras (avatar, cover, bio) from localStorage cache
   loadProfileExtras();
 
+  // ✅ FIX: stagger startup — ไม่ยิง API พร้อมกัน
+  // t=0: dashboard (ผ่าน ReqQueue อยู่แล้ว ใช้เวลา ~1s)
   loadDashboard();
-  startPolling();
-  // ✅ Chat v2: delay room list load to avoid burst 429
-  setTimeout(()=>loadRoomList(), 3500); // delay ป้องกัน burst 429
-  setTimeout(()=>checkFriendInviteURL(), 5000);
+  // t=4s: เริ่ม polling หลัง dashboard โหลดเสร็จ
+  setTimeout(()=>startPolling(), 4000);
+  // t=6s: room list
+  setTimeout(()=>loadRoomList(), 6000);
+  // t=8s: friend invite check (ถ้ามี URL param เท่านั้น)
+  setTimeout(()=>checkFriendInviteURL(), 8000);
 }
 
 /* ================================================
@@ -2445,19 +2491,31 @@ function switchTab(t){
 let dashChartObj = null;
 
 async function loadDashboard(){
+  // ✅ FIX: เปลี่ยนจาก Promise.all (burst) → sequential เพื่อไม่ยิง API พร้อมกัน
   try{
-    const jobs = [];
-    if(CFG.tbl.books) jobs.push(API.count(CFG.tbl.books).then(r=>{ qs('st-books').textContent=r.count??0; qs('an-book').textContent=r.count??0; }).catch(()=>{}));
-    if(CFG.tbl.chat)  jobs.push(API.count(CFG.tbl.chat).then(r=>{ qs('st-msgs').textContent=r.count??0; qs('an-msg').textContent=r.count??0; }).catch(()=>{}));
-    if(CFG.tbl.pay)   jobs.push(API.list(CFG.tbl.pay,{limit:500}).then(r=>{
-      const list=r.list||[];
-      const total=list.reduce((s,p)=>s+parseFloat(p.amount||0),0);
-      qs('st-pays').textContent=list.length;
-      qs('st-rev').textContent='฿'+total.toLocaleString('th-TH',{maximumFractionDigits:0});
-      qs('an-rev').textContent='฿'+total.toLocaleString('th-TH',{maximumFractionDigits:0});
-      qs('an-usr').textContent='1';
-    }).catch(()=>{}));
-    await Promise.all(jobs);
+    if(CFG.tbl.books){
+      try{
+        const r=await API.count(CFG.tbl.books);
+        qs('st-books').textContent=r.count??0; qs('an-book').textContent=r.count??0;
+      }catch{}
+    }
+    if(CFG.tbl.chat){
+      try{
+        const r=await API.count(CFG.tbl.chat);
+        qs('st-msgs').textContent=r.count??0; qs('an-msg').textContent=r.count??0;
+      }catch{}
+    }
+    if(CFG.tbl.pay){
+      try{
+        const r=await API.list(CFG.tbl.pay,{limit:500});
+        const list=r.list||[];
+        const total=list.reduce((s,p)=>s+parseFloat(p.amount||0),0);
+        qs('st-pays').textContent=list.length;
+        qs('st-rev').textContent='฿'+total.toLocaleString('th-TH',{maximumFractionDigits:0});
+        qs('an-rev').textContent='฿'+total.toLocaleString('th-TH',{maximumFractionDigits:0});
+        qs('an-usr').textContent='1';
+      }catch{}
+    }
     loadRecentBooks();
   }catch{}
   drawDashChart();
@@ -2756,13 +2814,19 @@ function startPolling(){
 }
 function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
 
-/* ── 429 backoff: ถ้า rate-limit ให้ชะลอ polling แล้ว reset กลับปกติ ── */
+/* ── 429 backoff: หยุด queue ทั้งหมด แล้ว reset กลับปกติ ── */
+let _429locked = false;
 function on429(){
+  if(_429locked) return; // ป้องกัน on429 ซ้อนกัน
+  _429locked = true;
   stopPolling();
-  _pollInterval = Math.min(_pollInterval * 2, 60000); // ✅ FIX: สูงสุด 60s (เพิ่มจาก 30s)
+  ReqQueue.clear(); // ✅ ล้าง queue ที่ค้างอยู่ทั้งหมด
+  _pollInterval = Math.min(_pollInterval * 2, 60000);
   console.warn(`Rate limit hit — next poll in ${_pollInterval/1000}s`);
+  toast(`API rate limit — รอ ${_pollInterval/1000}s แล้วลองใหม่อัตโนมัติ`,'warn');
   setTimeout(()=>{
-    _pollInterval = _POLL_BASE; // ✅ FIX: reset interval กลับปกติหลัง backoff
+    _429locked    = false;
+    _pollInterval = _POLL_BASE; // ✅ reset interval กลับปกติ
     startPolling();
   }, _pollInterval);
 }
