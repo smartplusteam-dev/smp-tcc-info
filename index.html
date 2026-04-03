@@ -2383,7 +2383,7 @@ function navigate(page){
   const _ca = document.querySelector('.content-area');
   if(_ca) _ca.style.overflowY = (page==='chat'||page==='friends') ? 'hidden' : 'auto';
 
-  if(page==='chat'){ qs('chat-badge').style.display='none'; if(curPage!=='chat') lastMsgCnt=0; loadChatV2(); scrollBottom(); }
+  if(page==='chat'){ qs('chat-badge').style.display='none'; lastMsgCnt=0; lastSeenId=null; _chatV2LastLoad=0; _chatLastLoad=0; loadChatV2(true); scrollBottom(); }
   if(page==='friends'){ loadFriendsList(); }
   if(page==='ebooks') loadEbooks();
   if(page==='payment') loadPayHist();
@@ -2742,7 +2742,8 @@ async function loadPayHist(){
    CHAT POLLING — 3s
 ================================================ */
 let pollTimer = null;
-let _pollInterval = 15000;  // เพิ่มเป็น 15s ป้องกัน rate-limit (Worker จำกัด 60 req/min)
+let _pollInterval = 20000;  // ✅ FIX: เพิ่มจาก 15s → 20s ลด request burst
+const _POLL_BASE   = 20000; // base interval สำหรับ reset หลัง backoff
 let _imgReloadDone = new Set(); // ติดตาม msgId ที่พยายาม reload แล้ว (ป้องกัน loop)
 
 function startPolling(){
@@ -2755,12 +2756,15 @@ function startPolling(){
 }
 function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
 
-/* ── 429 backoff: ถ้า rate-limit ให้ชะลอ polling ── */
+/* ── 429 backoff: ถ้า rate-limit ให้ชะลอ polling แล้ว reset กลับปกติ ── */
 function on429(){
   stopPolling();
-  _pollInterval = Math.min(_pollInterval * 2, 30000); // สูงสุด 30s
-  setTimeout(startPolling, _pollInterval);
+  _pollInterval = Math.min(_pollInterval * 2, 60000); // ✅ FIX: สูงสุด 60s (เพิ่มจาก 30s)
   console.warn(`Rate limit hit — next poll in ${_pollInterval/1000}s`);
+  setTimeout(()=>{
+    _pollInterval = _POLL_BASE; // ✅ FIX: reset interval กลับปกติหลัง backoff
+    startPolling();
+  }, _pollInterval);
 }
 
 /* ================================================
@@ -2957,12 +2961,22 @@ function linkify(text){
 function strHue(s){ let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))%360; return h; }
 
 /* ── Load / refresh chat ── */
+/* ✅ FIX: guard สำหรับ legacy loadChat */
+let _chatLoading  = false;
+let _chatLastLoad = 0;
+
 async function loadChat(force=false){
+  // ✅ FIX: ป้องกัน concurrent + burst calls
+  const now = Date.now();
+  if(!force && _chatLoading) return;
+  if(!force && now - _chatLastLoad < CHAT_MIN_INTERVAL) return;
+
   const el = qs('chat-msgs');
   if(!CFG.tbl.chat){
     el.innerHTML=`<div class="empty"><span class="ei">💬</span><h3>ยังไม่ได้ตั้งค่า</h3><p>กรุณาตั้งค่า Table ID ของ Chat</p><button class="btn btn-outline btn-sm mt-3" onclick="openConfig()">ตั้งค่า</button></div>`;
     return;
   }
+  _chatLoading = true;
   try{
     loadChatReactions();
     const d = await API.list(CFG.tbl.chat,{limit:120,sort:'CreatedAt'});
@@ -3012,9 +3026,12 @@ async function loadChat(force=false){
 
     lastMsgCnt = msgs.length;
     lastSeenId = msgs[msgs.length-1]?.Id || msgs[msgs.length-1]?.id || null;
+    _chatLastLoad = Date.now(); // ✅ บันทึกเวลาโหลดสำเร็จ
   }catch(e){
     if(String(e.message).includes('429')) on429();
     else console.warn('chat:',e);
+  }finally{
+    _chatLoading = false; // ✅ ปลด lock เสมอ
   }
 }
 
@@ -3076,7 +3093,7 @@ async function sendMsg(){
       user_name:myName,
       CreatedAt_orig:new Date().toISOString()   // ✅ ตรงกับ column จริงใน NocoDB
     });
-    await loadChatV2();
+    await loadChatV2(true); // ✅ force=true: bypass guard after write
   }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
 }
 
@@ -3123,7 +3140,7 @@ async function sendImage(event){
         user_name: myName, CreatedAt_orig: new Date().toISOString()
       });
     }
-    await loadChatV2();
+    await loadChatV2(true); // ✅ force=true: bypass guard after write
     scrollBottom();
     toast('ส่งรูปสำเร็จ ✅','success');
   }catch(e){
@@ -3253,7 +3270,17 @@ async function toggleReaction(id, emoji){
     if(!rx._mine && Object.keys(rx).filter(k=>k!=='_mine').length===0) delete chatReactions[id];
     saveChatReactions();
   }
-  loadChatV2();
+  // ✅ FIX: reactions เก็บใน localStorage เท่านั้น — ไม่ต้อง fetch API ใหม่
+  // re-render เฉพาะ bubble ที่เปลี่ยนแทน full reload
+  const bubble = document.querySelector(`[data-id="${id}"] .msg-reactions`);
+  if(bubble){
+    const rx2 = chatReactions[id]||{};
+    const mine = rx2._mine||null;
+    bubble.innerHTML = Object.entries(rx2).filter(([k])=>k!=='_mine'&&rx2[k]>0)
+      .map(([e,c])=>`<span class="reaction-chip${mine===e?' mine':''}" onclick="toggleReaction('${id}','${e}')">${e} ${c}</span>`).join('');
+  } else {
+    loadChatV2(); // fallback: full reload ถ้าหา element ไม่เจอ
+  }
 }
 
 /* ── Delete message ── */
@@ -3262,7 +3289,7 @@ async function deleteMsg(id){
   if(!confirmed) return;
   try{
     await API.update(CFG.tbl.chat, id, {message:'⟦del⟧'});
-    await loadChatV2();
+    await loadChatV2(true); // ✅ force=true
     toast('ลบข้อความแล้ว','success');
   }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
@@ -3386,7 +3413,7 @@ async function sendSticker(emoji){
   scrollBottom();
   try{
     await API.create(CFG.tbl.chat,{ message:text, user_email:myEmail||'anonymous', user_name:myName, CreatedAt_orig:new Date().toISOString() });
-    await loadChatV2(); scrollBottom();
+    await loadChatV2(true); scrollBottom();
   }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ: '+e.message,'error'); }
 }
 
@@ -3456,27 +3483,38 @@ async function reloadMsgImg(imgEl, msgId){
 }
 
 /* ── Badge check (background polling) ── */
+/* ✅ FIX: เปลี่ยนจาก /count API (1 call) → ดึง 1 แถวล่าสุดเทียบ Id แทน
+   เดิม: /count → ถ้า count เปลี่ยน → loadChatV2() = 2 API calls ต่อ cycle
+   ใหม่: list limit=1 sort=-created_at/CreatedAt → เทียบ lastSeenId = 1 call เท่านั้น */
 async function checkChatBadge(){
   try{
-    // Use messages table for current room, fallback to legacy chat table
     const tblId = (currentRoomId && CFG.tbl.messages) ? CFG.tbl.messages : CFG.tbl.chat;
     if(!tblId) return;
-    let countWhere = '';
+
+    // ✅ ดึงแค่ 1 แถวล่าสุด — ถูกกว่า /count และไม่ต้องยิง loadChatV2 แยก
+    let params = 'limit=1&sort=-CreatedAt';
     if(currentRoomId && CFG.tbl.messages){
-      countWhere = `?where=(room_id,eq,${currentRoomId})`;
+      params = `limit=1&sort=-created_at&where=(room_id,eq,${currentRoomId})`;
     }
-    const c = await API.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tblId}/count${countWhere}`);
-    const total = c.count||0;
-    if(total > lastMsgCnt && lastMsgCnt > 0){
+    const d = await API.req('GET',`/api/v1/db/data/noco/${CFG.base}/${tblId}?${params}`);
+    const latest = (d.list||[])[0];
+    if(!latest) return;
+
+    const latestId = String(latest.Id||latest.id||'');
+    const prevSeenId = String(lastSeenId||'');
+
+    if(latestId && latestId !== prevSeenId && lastSeenId !== null){
       const badge = qs('chat-badge');
       if(curPage==='chat'){
-        showTyping('สมาชิก');
-        setTimeout(()=>loadChatV2(), 1200);
+        // ✅ FIX: ไม่ต้อง loadChatV2() ซ้ำ — polling timer จัดการอยู่แล้ว
+        // แค่ update lastSeenId ไว้ รอรอบ poll ถัดไปแสดงผลเอง
       } else if(badge) {
-        badge.textContent = total - lastMsgCnt;
+        badge.textContent = '●';
         badge.style.display = 'flex';
       }
     }
+    // ✅ อัปเดต lastSeenId เพื่อรอบถัดไป
+    if(lastSeenId === null && latestId) lastSeenId = latestId;
   }catch(e){ if(String(e.message).includes('429')) on429(); }
 }
 
@@ -3603,6 +3641,11 @@ async function switchRoom(roomId, roomName, roomType){
 }
 
 /* ─── Load messages for current room ─── */
+/* ✅ FIX: เพิ่ม guard ป้องกัน concurrent calls และ burst ซ้ำ */
+let _chatV2Loading   = false;
+let _chatV2LastLoad  = 0;
+const CHAT_MIN_INTERVAL = 8000; // ✅ โหลดใหม่ได้ทุก 8s เท่านั้น (ป้องกัน burst)
+
 async function loadChatV2(force=false){
   // Route: currentRoomId set → v2 messages table; null → legacy chat table
   if(!currentRoomId){
@@ -3614,8 +3657,14 @@ async function loadChatV2(force=false){
     return;
   }
 
+  // ✅ FIX: ป้องกัน concurrent + burst calls
+  const now = Date.now();
+  if(!force && _chatV2Loading) return;
+  if(!force && now - _chatV2LastLoad < CHAT_MIN_INTERVAL) return;
+
   const el = qs('chat-msgs');
   if(!el) return;
+  _chatV2Loading = true;
   try{
     loadChatReactions();
     const d = await ChatAPI.listMessages(currentRoomId, 150);
@@ -3632,7 +3681,15 @@ async function loadChatV2(force=false){
     if(isNewMsg && !wasBottom){ const p=qs('new-msg-pill'); if(p) p.style.display='block'; }
     if(wasBottom||force||lastMsgCnt===0) scrollBottom();
     lastMsgCnt = msgs.length;
-  }catch(e){ console.warn('loadChatV2',e); }
+    // ✅ sync lastSeenId ให้ checkChatBadge ใช้ได้ถูกต้อง
+    if(msgs.length) lastSeenId = String(msgs[msgs.length-1].Id||msgs[msgs.length-1].id||'');
+    _chatV2LastLoad = Date.now(); // ✅ บันทึกเวลาโหลดสำเร็จ
+  }catch(e){
+    if(String(e.message).includes('429')) on429();
+    else console.warn('loadChatV2',e);
+  }finally{
+    _chatV2Loading = false; // ✅ ปลด lock เสมอ
+  }
 }
 
 /* ─── renderMsgRowV2 — maps messages table fields ─── */
@@ -3674,7 +3731,7 @@ async function sendMsgV2(){
 
   try{
     await ChatAPI.sendMessage({ room_id:currentRoomId, user_email:myEmail, user_name:myName, avatar:av, message:body, created_at:new Date().toISOString() });
-    await loadChatV2(); scrollBottom();
+    await loadChatV2(true); scrollBottom();
   }catch(e){ toast('ส่งไม่สำเร็จ: '+e.message,'error'); inp.value=text; }
 }
 
@@ -3689,7 +3746,7 @@ async function sendStickerToRoom(emoji, roomId){
   qs('chat-msgs').appendChild(tempRow); scrollBottom();
   try{
     await ChatAPI.sendMessage({ room_id:roomId, user_email:myEmail, user_name:myName, message:`⟦sticker⟧${emoji}`, created_at:new Date().toISOString() });
-    await loadChatV2(); scrollBottom();
+    await loadChatV2(true); scrollBottom();
   }catch(e){ tempRow.remove(); toast('ส่งสติ๊กเกอร์ไม่สำเร็จ','error'); }
 }
 
