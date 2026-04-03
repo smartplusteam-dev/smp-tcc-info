@@ -2018,6 +2018,60 @@ const ReqQueue = (() => {
   };
 })();
 
+/* ================================================================
+   MEMBER AVATAR CACHE
+   ดึง avatar จาก Members table แล้ว cache ไว้ใน memory
+   เพื่อให้สมาชิกทุกคนเห็นรูปโปรไฟล์ของกันและกัน
+   ================================================================ */
+const _avatarCache = {}; // { email: 'data:image/...' | null }
+let   _avatarFetchPending = {}; // { email: Promise } ป้องกัน fetch ซ้ำ
+
+async function fetchMemberAvatar(email){
+  if(!email) return '';
+  if(_avatarCache.hasOwnProperty(email)) return _avatarCache[email]||'';
+  if(_avatarFetchPending[email]) return _avatarFetchPending[email];
+
+  _avatarFetchPending[email] = (async()=>{
+    try{
+      if(!CFG.tbl.members) return '';
+      const r = await API.findMemberByEmail(email);
+      const member = (r.list||[])[0];
+      const av = member?.avatar||member?.Avatar||'';
+      _avatarCache[email] = av;
+      return av;
+    }catch{
+      _avatarCache[email] = '';
+      return '';
+    }finally{
+      delete _avatarFetchPending[email];
+    }
+  })();
+  return _avatarFetchPending[email];
+}
+
+/** เรียกหลัง login — pre-load avatar ของตัวเอง */
+async function primeAvatarCache(email, avatarData){
+  if(email) _avatarCache[email] = avatarData||'';
+}
+
+/** ดึง avatar จาก cache (sync) — คืน '' ถ้ายังไม่มีใน cache */
+function getAvatarCached(email){
+  return _avatarCache[email]||'';
+}
+
+/** โหลด avatar ของ member ทุกคนเข้า cache ทีเดียว (เรียกหลัง login) */
+async function prefetchAllMemberAvatars(){
+  if(!CFG.tbl.members) return;
+  try{
+    const d = await API.list(CFG.tbl.members, {limit:200});
+    (d.list||[]).forEach(m=>{
+      const email = m.email||m.Email||'';
+      const av    = m.avatar||m.Avatar||'';
+      if(email) _avatarCache[email] = av;
+    });
+  }catch{ /* ไม่ critical — render fallback ตัวอักษรได้ */ }
+}
+
 /* ================================================
    CONFIG
 ================================================ */
@@ -2392,6 +2446,15 @@ function afterLogin(){
 
   // Load profile extras (avatar, cover, bio) from localStorage cache
   loadProfileExtras();
+
+  // ✅ FIX: prime own avatar into cache from localStorage immediately
+  const _myEmail = AUTH.user?.email||'';
+  if(_myEmail){
+    const _myKey = 'sp_pf_'+btoa(_myEmail).replace(/=/g,'');
+    try{ const _pf=JSON.parse(localStorage.getItem(_myKey)||'{}'); primeAvatarCache(_myEmail, _pf.avatar||''); }catch{}
+  }
+  // Pre-load all member avatars from Members table (runs in background via queue)
+  setTimeout(()=>prefetchAllMemberAvatars(), 2000);
 
   // ✅ FIX: stagger startup — ไม่ยิง API พร้อมกัน
   // t=0: dashboard (ผ่าน ReqQueue อยู่แล้ว ใช้เวลา ~1s)
@@ -2973,13 +3036,14 @@ function renderMsgRow(m, prevM, myEmail){
   // Actions for own: delete. Both: react + reply
   const longpressAttr = `oncontextmenu="event.preventDefault();showMsgActions('${esc(id)}','${esc(own?'own':'other')}','${esc(curName)}','${esc(raw.replace(/'/g,"\\'"))}',this);return false;"`;
 
-  // ✅ FIX: Avatar — ใช้ลำดับ: 1) avatar field ในข้อความ (v2 messages table)
-  //                              2) localStorage cache (legacy / own profile)
-  //  เดิมอ่านแค่ localStorage → สมาชิกอื่นไม่เห็นรูปโปรไฟล์กัน
-  let avatarData = m.avatar||m.Avatar||''; // จาก message record โดยตรง
+  // ✅ FIX: Avatar — ลำดับการดึง:
+  //   1) _avatarCache (Members table, shared จริง) ← แก้ปัญหาหลัก
+  //   2) localStorage (legacy / fallback)
+  const senderEmail = m.user_email||m.UserEmail||'';
+  let avatarData = getAvatarCached(senderEmail); // จาก Members table cache
   if(!avatarData){
-    // fallback: localStorage (เห็นแค่ของตัวเอง หรือคนที่เคยแชทบนเครื่องนี้)
-    const avatarKey = 'sp_pf_'+btoa(m.user_email||m.UserEmail||'').replace(/=/g,'');
+    // fallback: localStorage
+    const avatarKey = 'sp_pf_'+btoa(senderEmail).replace(/=/g,'');
     try{ const pf=JSON.parse(localStorage.getItem(avatarKey)||'{}'); avatarData=pf.avatar||''; }catch{}
   }
   if(!avatarData && own){
@@ -3762,6 +3826,11 @@ async function loadChatV2(force=false){
     const d = await ChatAPI.listMessages(currentRoomId, 150);
     const msgs = d.list||[];
 
+    // ✅ FIX: pre-fetch avatars ของทุกคนที่ส่งข้อความ ก่อน render
+    // เพราะ messages table ไม่มีคอลัมน์ avatar — ต้องดึงจาก Members table
+    const uniqueEmails = [...new Set(msgs.map(m=>m.user_email||m.UserEmail||'').filter(Boolean))];
+    await Promise.allSettled(uniqueEmails.map(e=>fetchMemberAvatar(e)));
+
     const myEmail = AUTH.user?.email||'';
     const wasBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     const isNewMsg  = msgs.length > lastMsgCnt && lastMsgCnt > 0;
@@ -3788,20 +3857,22 @@ async function loadChatV2(force=false){
 function renderMsgRowV2(m, prevM, myEmail){
   // Normalize fields from messages table
   const normalized = {
-    Id: m.Id||m.id,
-    user_email: m.user_email||m.UserEmail||'',
-    user_name:  m.user_name||m.UserName||'',
-    message:    m.message||m.Message||'',
-    CreatedAt:  m.created_at||m.CreatedAt||m.createdAt||'',
-    avatar:     m.avatar||m.Avatar||'',  // ✅ FIX: ส่ง avatar field ผ่านมาด้วย
+    Id:        m.Id||m.id,
+    user_email:m.user_email||m.UserEmail||'',
+    user_name: m.user_name||m.UserName||'',
+    message:   m.message||m.Message||'',
+    CreatedAt: m.created_at||m.CreatedAt||m.createdAt||'',
+    // ✅ FIX: ส่ง reactions จาก DB — ไม่ใส่ทำให้คนอื่นไม่เห็น reaction
+    reactions: m.reactions||m.Reactions||'',
+    // avatar ดึงจาก _avatarCache แทน (messages table ไม่มีคอลัมน์ avatar)
   };
   return renderMsgRow(normalized, prevM ? {
-    Id: prevM.Id||prevM.id,
-    user_email: prevM.user_email||prevM.UserEmail||'',
-    user_name:  prevM.user_name||prevM.UserName||'',
-    message:    prevM.message||prevM.Message||'',
-    CreatedAt:  prevM.created_at||prevM.CreatedAt||'',
-    avatar:     prevM.avatar||prevM.Avatar||'',
+    Id:        prevM.Id||prevM.id,
+    user_email:prevM.user_email||prevM.UserEmail||'',
+    user_name: prevM.user_name||prevM.UserName||'',
+    message:   prevM.message||prevM.Message||'',
+    CreatedAt: prevM.created_at||prevM.CreatedAt||'',
+    reactions: prevM.reactions||prevM.Reactions||'',
   } : null, myEmail);
 }
 
