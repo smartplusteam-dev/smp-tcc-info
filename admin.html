@@ -183,7 +183,7 @@ td{padding:11px 14px;vertical-align:middle;color:var(--text)}
 
 /* RESPONSIVE */
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
-@media(max-width:600px){.stats-grid{grid-template-columns:1fr}.sidebar{display:none}}
+@media(max-width:600px){.sidebar{display:none}}
 
 /* ── MOBILE NAV (hamburger + bottom bar) ── */
 #mobile-topbar{
@@ -582,6 +582,11 @@ td{padding:11px 14px;vertical-align:middle;color:var(--text)}
             <tr><td colspan="8"><div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div></td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Card List สมาชิก -->
+      <div class="mob-card-list" id="mob-mem-list">
+        <div class="loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
       </div>
     </div>
 
@@ -1007,21 +1012,49 @@ function drawCoinsChart(list){
 function renderRecentList(list){
   const el = qs('recent-list');
   if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📋</div>ยังไม่มีรายการ</div>'; return; }
-  el.innerHTML = `
-  <table style="width:100%">
-    <thead><tr>
-      <th>ชื่อ</th><th>อีเมล</th><th class="td-num">ประนอมหนี้</th><th>สถานะ</th><th>วันที่</th>
-    </tr></thead>
-    <tbody>
-    ${list.map(s=>`<tr>
-      <td>${esc(s.full_name||'—')}</td>
-      <td class="text-s">${esc(s.member_email||'—')}</td>
-      <td class="td-num">${baht(s.debt_settlement)}</td>
-      <td>${statusBadge(s.status)}</td>
-      <td class="text-s">${fmtDate(s.submitted_at)}</td>
-    </tr>`).join('')}
-    </tbody>
-  </table>`;
+  const isMobile = window.innerWidth <= 768;
+  if(isMobile){
+    el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">` +
+      list.map(s=>{
+        const estimated = Number(s.debt_settlement||0)+Number(s.goods_outstanding||0);
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+          <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(s.full_name||'—')}</div>
+              <div style="font-size:11px;color:var(--text-s);margin-top:2px">${esc(s.member_email||'—')}</div>
+            </div>
+            ${statusBadge(s.status)}
+          </div>
+          <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:10px;color:var(--text-s);text-transform:uppercase;letter-spacing:.3px">💰 ประนอมหนี้</div>
+              <div style="font-size:14px;font-weight:700;color:var(--green);margin-top:2px">${baht(s.debt_settlement)}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-s);text-transform:uppercase;letter-spacing:.3px">📊 คงค้างโดยประมาณ</div>
+              <div style="font-size:14px;font-weight:700;color:#60A5FA;margin-top:2px">${baht(estimated)}</div>
+            </div>
+          </div>
+          <div style="padding:0 14px 10px;font-size:11px;color:var(--text-s)">📅 ${fmtDate(s.submitted_at)}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    el.innerHTML = `
+    <table style="width:100%">
+      <thead><tr>
+        <th>ชื่อ</th><th>อีเมล</th><th class="td-num">ประนอมหนี้</th><th>สถานะ</th><th>วันที่</th>
+      </tr></thead>
+      <tbody>
+      ${list.map(s=>`<tr>
+        <td>${esc(s.full_name||'—')}</td>
+        <td class="text-s">${esc(s.member_email||'—')}</td>
+        <td class="td-num">${baht(s.debt_settlement)}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td class="text-s">${fmtDate(s.submitted_at)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
 }
 
 function statusBadge(s){
@@ -1342,10 +1375,15 @@ function filterMembers(){
 
 function renderMembers(){
   const tbody = qs('mem-tbody');
+  const mobEl = qs('mob-mem-list');
+
   if(!filteredMems.length){
     tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">👥</div>ไม่พบสมาชิก</div></td></tr>';
+    if(mobEl) mobEl.innerHTML='<div class="empty"><div class="empty-icon">👥</div>ไม่พบสมาชิก</div>';
     return;
   }
+
+  /* ── Desktop table rows ── */
   tbody.innerHTML = filteredMems.map((m,i)=>{
     const sc = m.status==='active'?'badge-approved':m.status==='suspended'?'badge-rejected':'badge-pending';
     const st = m.status==='active'?'✅ Active':m.status==='suspended'?'🚫 Suspended':'⏳ Pending';
@@ -1360,6 +1398,52 @@ function renderMembers(){
       <td class="text-s">${fmtDate(m.joined_at)}</td>
       <td class="text-s">${fmtDate(m.last_login)}</td>
     </tr>`;
+  }).join('');
+
+  /* ── Mobile cards ── */
+  if(!mobEl) return;
+  mobEl.innerHTML = filteredMems.map((m,i)=>{
+    const isAdmin   = m.role==='admin';
+    const isActive  = m.status==='active';
+    const isSusp    = m.status==='suspended';
+    const stCls     = isActive?'badge-approved':isSusp?'badge-rejected':'badge-pending';
+    const stTxt     = isActive?'✅ Active':isSusp?'🚫 Suspended':'⏳ Pending';
+    const roleCls   = isAdmin?'badge-rejected':'badge-approved';
+    const roleTxt   = isAdmin?'👑 Admin':'👤 Member';
+    /* avatar letter + gradient hue from name */
+    const letter    = (m.name||'?')[0].toUpperCase();
+    const hue       = [...(m.name||'A')].reduce((h,c)=>h+c.charCodeAt(0),0)%360;
+    return `<div class="mob-sub-card">
+      <div class="mob-sub-card-hdr" style="gap:12px">
+        <!-- Avatar -->
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,hsl(${hue},55%,35%),hsl(${hue},45%,25%));
+          display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;
+          color:#fff;flex-shrink:0;border:2px solid hsl(${hue},50%,45%)">${letter}</div>
+        <div style="flex:1;min-width:0">
+          <div class="mob-sub-card-name">${i+1}. ${esc(m.name||'—')}</div>
+          <div class="mob-sub-card-email" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.email||'—')}</div>
+        </div>
+        <span class="badge ${stCls}" style="flex-shrink:0">${stTxt}</span>
+      </div>
+      <div class="mob-sub-card-body">
+        <div class="mob-sub-card-row">
+          <div class="mob-sub-card-lbl">เบอร์โทร</div>
+          <div class="mob-sub-card-val">${esc(m.phone||'—')}</div>
+        </div>
+        <div class="mob-sub-card-row">
+          <div class="mob-sub-card-lbl">Role</div>
+          <div style="margin-top:3px"><span class="badge ${roleCls}">${roleTxt}</span></div>
+        </div>
+        <div class="mob-sub-card-row">
+          <div class="mob-sub-card-lbl">📅 วันที่สมัคร</div>
+          <div class="mob-sub-card-val">${fmtDate(m.joined_at)}</div>
+        </div>
+        <div class="mob-sub-card-row">
+          <div class="mob-sub-card-lbl">🕐 Login ล่าสุด</div>
+          <div class="mob-sub-card-val">${fmtDate(m.last_login)}</div>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
 
