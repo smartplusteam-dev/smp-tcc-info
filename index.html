@@ -923,25 +923,52 @@ a{color:var(--green);text-decoration:none}
 .sub-value{font-weight:600;text-align:right;max-width:60%}
 .locked-notice{display:flex;align-items:center;gap:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--warn);margin-top:12px}
 /* debt schedule */
-.debt-schedule-box{background:linear-gradient(135deg,rgba(13,34,48,.95),rgba(6,18,34,.95));border:1px solid rgba(59,130,246,.25);border-radius:16px;overflow:hidden;margin-top:4px}
-.debt-sched-hdr{background:rgba(59,130,246,.12);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(59,130,246,.2)}
-.debt-sched-hdr-title{font-size:12px;font-weight:700;color:var(--blue-l);letter-spacing:.6px;text-transform:uppercase}
-.debt-total-row{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.debt-total-item{background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px}
-.debt-total-label{font-size:10px;color:var(--text-s);margin-bottom:3px}
-.debt-total-val{font-size:15px;font-weight:700;color:var(--text)}
+/* ── debt schedule: mobile-first card layout ── */
+.debt-schedule-box{background:linear-gradient(160deg,rgba(10,26,42,.98),rgba(5,14,28,.98));border:1px solid rgba(59,130,246,.22);border-radius:18px;overflow:hidden;margin-top:4px}
+.debt-sched-hdr{background:linear-gradient(90deg,rgba(59,130,246,.15),rgba(59,130,246,.05));padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(59,130,246,.18)}
+.debt-sched-hdr-title{font-size:13px;font-weight:700;color:var(--blue-l);display:flex;align-items:center;gap:6px}
+/* summary grid: 2 cols on mobile, stays 2 */
+.debt-total-grid{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.debt-total-grid.full{grid-template-columns:1fr}
+.debt-total-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px}
+.debt-total-label{font-size:10px;color:var(--text-s);margin-bottom:4px;letter-spacing:.3px}
+.debt-total-val{font-size:16px;font-weight:700;color:var(--text);line-height:1.2}
 .debt-total-val.highlight{color:var(--yellow)}
-.debt-sched-table{width:100%;border-collapse:collapse;font-size:12px}
-.debt-sched-table thead th{background:rgba(255,255,255,.04);padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid rgba(255,255,255,.06)}
-.debt-sched-table tbody tr{border-bottom:1px solid rgba(255,255,255,.04)}
-.debt-sched-table tbody tr:last-child{border-bottom:none}
-.debt-sched-table td{padding:10px 12px;vertical-align:middle}
-.ds-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.debt-total-sub{font-size:10px;color:var(--text-s);margin-top:3px;line-height:1.4}
+/* verified highlight box */
+.debt-verified-box{margin:0 14px 12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:10px 14px}
+/* installment cards list */
+.inst-list{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.inst-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden;transition:border-color .2s}
+.inst-card-top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.inst-no{display:flex;align-items:center;gap:8px}
+.inst-no-badge{width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--blue-l);flex-shrink:0}
+.inst-title{font-size:13px;font-weight:700;color:var(--text)}
+.inst-sub{font-size:10px;color:var(--text-s);margin-top:1px}
+.inst-pct-badge{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--green);flex-shrink:0}
+.inst-card-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.inst-body-cell{padding:9px 14px;display:flex;flex-direction:column;gap:2px}
+.inst-body-cell:first-child{border-right:1px solid rgba(255,255,255,.05)}
+.inst-body-label{font-size:10px;color:var(--text-s);letter-spacing:.3px}
+.inst-body-val{font-size:12px;font-weight:600;color:var(--text)}
+/* overdue date badge */
+.ds-overdue-inline{display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--error);line-height:1.3}
+.ds-ok-inline{font-size:12px;font-weight:600;color:var(--text)}
+/* status badges */
+.ds-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
 .ds-pending{background:rgba(251,191,36,.12);color:var(--warn)}
 .ds-overdue{background:rgba(248,113,113,.12);color:var(--error)}
 .ds-amount-pending{font-size:11px;color:var(--text-s);font-style:italic}
-.debt-verified-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:var(--green)}
-.debt-unverified-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:var(--warn)}
+/* chips */
+.debt-verified-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--green)}
+.debt-unverified-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--warn)}
+/* progress track */
+.inst-progress-wrap{padding:0 14px 12px}
+.inst-progress-track{height:4px;background:rgba(255,255,255,.07);border-radius:4px;display:flex;gap:3px}
+.inst-progress-seg{flex:1;height:4px;border-radius:4px;background:rgba(59,130,246,.25)}
+.inst-progress-seg.active{background:var(--yellow)}
+/* note bar */
+.inst-note-bar{margin:0 14px 12px;background:rgba(59,130,246,.05);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--text-s);line-height:1.5}
 .status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
 .chip-pending{background:rgba(251,191,36,.12);color:var(--warn)}
 .chip-approved{background:rgba(52,211,153,.12);color:var(--success)}
@@ -1878,82 +1905,109 @@ function addMonths(d, m){
 
 /* ─── build debt schedule HTML ─── */
 function buildDebtSchedule(sub){
-  const debt      = Number(sub.debt_settlement||0);
-  const goods     = Number(sub.goods_outstanding||0);
-  const estimated = debt + goods;
-  const verified  = Number(sub.debt_verified||0);
+  const debt        = Number(sub.debt_settlement||0);
+  const goods       = Number(sub.goods_outstanding||0);
+  const estimated   = debt + goods;
+  const verified    = Number(sub.debt_verified||0);
   const hasVerified = verified > 0;
+  const baseAmount  = hasVerified ? verified : estimated;
+  const refDateRaw  = hasVerified ? (sub.reviewed_at||sub.submitted_at) : sub.submitted_at;
+  const refDate     = new Date(refDateRaw||Date.now());
+  const isOverdue   = !hasVerified;
+  const fmtBaht     = v => '฿'+Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2});
 
-  /* base amount & reference date */
-  const baseAmount = hasVerified ? verified : estimated;
-  const refDateRaw = hasVerified ? (sub.reviewed_at||sub.submitted_at) : sub.submitted_at;
-  const refDate    = new Date(refDateRaw||Date.now());
-  const isOverdue  = !hasVerified; /* dates calculated from submitted_at = past/overdue */
-
-  /* installment plan */
-  const under50k = baseAmount < 50000;
+  const under50k    = baseAmount < 50000;
   const installments = under50k
-    ? [{ no:1, months:3, pct:100 }]
-    : [{ no:1, months:3, pct:25 },{ no:2, months:6, pct:25 },{ no:3, months:9, pct:25 },{ no:4, months:12, pct:25 }];
-
-  /* rows */
-  const rows = installments.map(inst => {
-    const dueDate = addMonths(refDate, inst.months);
-    const dueTxt  = thDate(dueDate);
-    const dateBadge = isOverdue
-      ? `<span class="ds-badge ds-overdue">📅 กำหนดรับเงิน: ${dueTxt}</span>`
-      : `<span style="font-size:12px;color:var(--text)">${dueTxt}</span>`;
-    return `<tr>
-      <td style="font-weight:600;color:var(--text)">ครั้งที่ ${inst.no}<br><span style="font-size:10px;color:var(--text-s)">ระยะเวลา ${inst.months} เดือน</span></td>
-      <td>${dateBadge}</td>
-      <td style="text-align:center;font-weight:700;color:var(--green)">${inst.pct}.00%</td>
-      <td><span class="ds-amount-pending">⏳ ระหว่างรออนุมัติ...</span></td>
-      <td style="text-align:center"><span class="ds-badge ds-pending">รออนุมัติ</span></td>
-    </tr>`;
-  }).join('');
+    ? [{no:1,months:3,pct:100}]
+    : [{no:1,months:3,pct:25},{no:2,months:6,pct:25},{no:3,months:9,pct:25},{no:4,months:12,pct:25}];
 
   const statusChip = hasVerified
     ? `<span class="debt-verified-chip">✅ ยืนยันแล้ว</span>`
     : `<span class="debt-unverified-chip">⏳ รอแอดมินยืนยัน</span>`;
 
-  const fmtBaht = v => '฿'+Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2});
+  /* ── progress track dots ── */
+  const progressSegs = installments.map((_,i)=>
+    `<div class="inst-progress-seg"></div>`
+  ).join('');
+
+  /* ── installment cards ── */
+  const cards = installments.map(inst => {
+    const dueDate  = addMonths(refDate, inst.months);
+    const dueTxt   = thDate(dueDate);
+    const dateHtml = isOverdue
+      ? `<div class="ds-overdue-inline">📅 ${dueTxt}</div>
+         <div style="font-size:10px;color:var(--error);margin-top:3px">นับจากวันที่ส่งแบบฟอร์ม</div>`
+      : `<div class="ds-ok-inline">📅 ${dueTxt}</div>
+         <div style="font-size:10px;color:var(--green);margin-top:3px">นับจากวันอนุมัติ</div>`;
+    return `
+    <div class="inst-card">
+      <div class="inst-card-top">
+        <div class="inst-no">
+          <div class="inst-no-badge">${inst.no}</div>
+          <div>
+            <div class="inst-title">ครั้งที่ ${inst.no}</div>
+            <div class="inst-sub">ระยะเวลา ${inst.months} เดือน</div>
+          </div>
+        </div>
+        <div class="inst-pct-badge">${inst.pct}%</div>
+      </div>
+      <div class="inst-card-body">
+        <div class="inst-body-cell">
+          <div class="inst-body-label">📆 กำหนดจ่าย</div>
+          ${dateHtml}
+        </div>
+        <div class="inst-body-cell">
+          <div class="inst-body-label">💰 จำนวนเงิน</div>
+          <div style="font-size:11px;color:var(--text-s);font-style:italic;margin-top:2px">⏳ ระหว่างรออนุมัติ</div>
+          <div style="margin-top:4px"><span class="ds-badge ds-pending">รออนุมัติ</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const noteBar = under50k
+    ? `<div class="inst-note-bar">📌 วงเงินน้อยกว่า 50,000 บาท — ชำระครั้งเดียว 100% ภายในครั้งที่ 1</div>`
+    : `<div class="inst-note-bar">📌 ชำระ 4 ครั้ง × 25% ทุก 3 เดือน ${isOverdue?'<span style="color:var(--error)">(วันที่นับจากวันที่ส่งแบบฟอร์ม)</span>':'<span style="color:var(--green)">(วันที่นับจากวันที่อนุมัติ)</span>'}</div>`;
 
   return `<div class="debt-schedule-box">
+
+    <!-- header -->
     <div class="debt-sched-hdr">
       <span class="debt-sched-hdr-title">📊 สรุปรายการหนี้สินคงค้าง</span>
       ${statusChip}
     </div>
-    <div class="debt-total-row">
+
+    <!-- summary cards -->
+    <div class="debt-total-grid" style="padding-top:14px">
       <div class="debt-total-item">
         <div class="debt-total-label">ยอดเงินคงค้างโดยประมาณ</div>
         <div class="debt-total-val">${fmtBaht(estimated)}</div>
-        <div style="font-size:10px;color:var(--text-s);margin-top:2px">ประนอมหนี้ ${fmtBaht(debt)} + สินค้าคงค้าง ${fmtBaht(goods)}</div>
+        <div class="debt-total-sub">ประนอมหนี้ ${fmtBaht(debt)}<br>+ สินค้าคงค้าง ${fmtBaht(goods)}</div>
       </div>
       <div class="debt-total-item">
-        <div class="debt-total-label">ยอดสรุปวงเงินคงค้างรวม${hasVerified?' (ยืนยันแล้ว)':' (รอยืนยัน)'}</div>
-        <div class="debt-total-val highlight">${hasVerified ? fmtBaht(verified) : '— รอแอดมินตรวจสอบ'}</div>
-        ${hasVerified?`<div style="font-size:10px;color:var(--text-s);margin-top:2px">ข้อมูล ณ ${thDate(sub.reviewed_at)}</div>`:''}
+        <div class="debt-total-label">ยอดสรุปวงเงินคงค้างรวม</div>
+        <div class="debt-total-val highlight">${hasVerified ? fmtBaht(verified) : '— รอยืนยัน'}</div>
+        ${hasVerified?`<div class="debt-total-sub">ข้อมูล ณ ${thDate(sub.reviewed_at)}</div>`:'<div class="debt-total-sub" style="color:var(--warn)">รอแอดมินตรวจสอบ</div>'}
       </div>
     </div>
-    <div class="debt-total-row" style="grid-template-columns:1fr">
-      <div class="debt-total-item" style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.15)">
-        <div class="debt-total-label">วงเงินคงค้างที่ตรวจสอบและอนุมัติ</div>
-        <div class="debt-total-val highlight">${hasVerified ? fmtBaht(verified) : '— รอแอดมินกรอกข้อมูล'}</div>
-      </div>
+
+    <!-- verified box -->
+    <div class="debt-verified-box">
+      <div class="debt-total-label">⚙️ วงเงินคงค้างที่ตรวจสอบและอนุมัติ</div>
+      <div class="debt-total-val highlight" style="margin-top:4px">${hasVerified ? fmtBaht(verified) : '— รอแอดมินกรอกข้อมูล'}</div>
     </div>
-    <div style="padding:0 4px 4px">
-      <table class="debt-sched-table">
-        <thead><tr>
-          <th>ระยะเวลา</th>
-          <th>กำหนดจ่าย${isOverdue?' <span style="color:var(--error);font-size:9px">(นับจากวันที่ส่งแบบฟอร์ม)</span>':' <span style="font-size:9px;color:var(--green)">(นับจากวันอนุมัติ)</span>'}</th>
-          <th style="text-align:center">เปอร์เซ็นต์</th>
-          <th>เป็นเงิน</th>
-          <th style="text-align:center">สถานะ</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      ${under50k?`<div style="font-size:11px;color:var(--text-s);padding:8px 12px">📌 วงเงินน้อยกว่า 50,000 บาท — ชำระครั้งเดียว 100% ภายใน ครั้งที่ 1</div>`:''}
+
+    <!-- progress bar -->
+    <div class="inst-progress-wrap">
+      <div class="inst-progress-track">${progressSegs}</div>
     </div>
+
+    <!-- note -->
+    ${noteBar}
+
+    <!-- installment cards -->
+    <div class="inst-list">${cards}</div>
+
   </div>`;
 }
 
