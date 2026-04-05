@@ -1452,8 +1452,8 @@ a{color:var(--green);text-decoration:none}
     <!-- ──── SUBMIT FORM ──── -->
     <div class="page" id="page-submit">
       <div class="page-header">
-        <div class="page-title">📋 กรอกข้อมูลเหรียญ</div>
-        <div class="page-sub">บันทึกข้อมูลคะแนน/เหรียญสำหรับการประนอมหนี้</div>
+        <div class="page-title">📋กรอกข้อมูลหนี้สินคงค้าง</div>
+        <div class="page-sub">บันทึกข้อมูลหนี้สินคงค้างโดยประมาณ</div>
       </div>
 
       <!-- สถานะหลังส่งแล้ว (ล็อค) -->
@@ -1470,7 +1470,7 @@ a{color:var(--green);text-decoration:none}
           <div class="sub-row"><span class="sub-label">SMPF</span><span class="sub-value" id="sv-smpf">—</span></div>
           <div class="sub-row"><span class="sub-label">SMP Bonus</span><span class="sub-value" id="sv-bonus">—</span></div>
           <div class="sub-row"><span class="sub-label">ยอดประนอมหนี้</span><span class="sub-value" id="sv-debt">—</span></div>
-          <div class="sub-row"><span class="sub-label">สินค้าคงค้าง</span><span class="sub-value" id="sv-goods">—</span></div>
+          <div class="sub-row"><span class="sub-label">ค่าสินค้าคงค้าง</span><span class="sub-value" id="sv-goods">—</span></div>
           <div class="sub-row"><span class="sub-label">เอกสารแนบ</span><span class="sub-value" id="sv-docs">—</span></div>
         </div>
         <div class="locked-notice">
@@ -1497,7 +1497,7 @@ a{color:var(--green);text-decoration:none}
 
         <!-- ข้อมูลเหรียญ -->
         <div class="form-section">
-          <div class="form-section-title">🪙 ข้อมูลคะแนน/เหรียญ</div>
+          <div class="form-section-title">🪙ข้อมูลหนี้สินคงค้างในระบบ</div>
           <div class="input-row-2">
             <div class="form-group">
               <label class="form-label">จำนวนนอกระบบ (คะแนน/เหรียญ)</label>
@@ -1512,12 +1512,12 @@ a{color:var(--green);text-decoration:none}
           </div>
           <div class="input-row-2">
             <div class="form-group">
-              <label class="form-label">จำนวนเหรียญ SMPF</label>
+              <label class="form-label">จำนวน SMPF (เหรียญ)</label>
               <input type="text" inputmode="decimal" id="sf-smpf" class="form-input coin-input" placeholder="0" oninput="fmtCoinInput(this)" autocomplete="off">
               <div class="coin-preview" id="prev-smpf"></div>
             </div>
             <div class="form-group">
-              <label class="form-label">จำนวนเหรียญ SMP Bonus</label>
+              <label class="form-label">จำนวน SMP Bonus(เหรียญ)</label>
               <input type="text" inputmode="decimal" id="sf-bonus" class="form-input coin-input" placeholder="0" oninput="fmtCoinInput(this)" autocomplete="off">
               <div class="coin-preview" id="prev-bonus"></div>
             </div>
@@ -1528,7 +1528,7 @@ a{color:var(--green);text-decoration:none}
             <div class="coin-preview" id="prev-debt"></div>
           </div>
           <div class="form-group">
-            <label class="form-label">สินค้าคงค้าง (บาท)</label>
+            <label class="form-label">ค่าสินค้าคงค้าง (บาท)</label>
             <input type="text" inputmode="decimal" id="sf-goods" class="form-input coin-input" placeholder="0.00" oninput="fmtCoinInput(this,true)" autocomplete="off">
             <div class="coin-preview" id="prev-goods"></div>
           </div>
@@ -1550,6 +1550,9 @@ a{color:var(--green);text-decoration:none}
         <!-- Submit -->
         <div style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--error);margin-bottom:16px">
           ⚠️ <strong>สำคัญ:</strong> เมื่อกดส่งข้อมูลแล้วจะไม่สามารถแก้ไขได้ กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง
+        </div>
+         <div style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--error);margin-bottom:16px">
+          ⚠️ <strong>สำคัญ:</strong> ยอดเงินคงค้างต่ำกว่า 50,000 บาท ชำระแบบครั้งเดียว ยอดเกิน 50,000 แบ่งชำระ 4 ครั้ง  กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง
         </div>
         <button class="btn btn-gold" id="sf-btn" onclick="submitForm()" style="width:100%;padding:14px">
           <i data-lucide="send"></i> ยืนยันส่งข้อมูล
@@ -1898,13 +1901,13 @@ function buildDebtSchedule(sub){
     const dueDate = addMonths(refDate, inst.months);
     const dueTxt  = thDate(dueDate);
     const dateBadge = isOverdue
-      ? `<span class="ds-badge ds-overdue">📅 วันที่เลย: ${dueTxt}</span>`
+      ? `<span class="ds-badge ds-overdue">📅 กำหนดรับเงิน: ${dueTxt}</span>`
       : `<span style="font-size:12px;color:var(--text)">${dueTxt}</span>`;
     return `<tr>
       <td style="font-weight:600;color:var(--text)">ครั้งที่ ${inst.no}<br><span style="font-size:10px;color:var(--text-s)">ระยะเวลา ${inst.months} เดือน</span></td>
       <td>${dateBadge}</td>
       <td style="text-align:center;font-weight:700;color:var(--green)">${inst.pct}.00%</td>
-      <td><span class="ds-amount-pending">⏳ ระหว่างรออนุมัติ</span></td>
+      <td><span class="ds-amount-pending">⏳ ระหว่างรออนุมัติ...</span></td>
       <td style="text-align:center"><span class="ds-badge ds-pending">รออนุมัติ</span></td>
     </tr>`;
   }).join('');
